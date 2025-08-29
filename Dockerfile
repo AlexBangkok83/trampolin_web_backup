@@ -1,5 +1,5 @@
 # --- Build Stage ---------------------------------------------------------
-FROM node:18-alpine AS builder
+FROM node:20-alpine-slim AS builder
 WORKDIR /app
 
 # Install dependencies first (leverages Docker layer cache)
@@ -10,13 +10,13 @@ RUN npm install --production=false --legacy-peer-deps
 COPY . .
 
 # Next.js requires NEXT_TELEMETRY_DISABLED for CI builds
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
 RUN npm run build
 
 # --- Production Stage ----------------------------------------------------
-FROM node:18-alpine AS runner
+FROM node:20-alpine-slim AS runner
 WORKDIR /app
 
 # Copy only necessary files from builder
@@ -29,6 +29,6 @@ COPY --from=builder /app/next.config.js ./next.config.js
 RUN npm install --production --legacy-peer-deps && npm cache clean --force;
 
 EXPOSE 3000
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 CMD ["npm", "start"]
