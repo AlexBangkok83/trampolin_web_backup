@@ -85,6 +85,37 @@ Copy `.env.example` to `.env.local` and fill in values as you add features (data
 
 ## 🐳 Docker
 
+### Installing Docker Desktop on macOS
+
+1. **Download installer**  
+   Visit <https://www.docker.com/products/docker-desktop/> and download the "Docker Desktop for Mac (Apple Silicon / Intel)" build matching your chip.
+2. **Install**  
+   Double-click the `.dmg` and drag the _Docker_ icon into **Applications**.
+3. **Launch & grant privileges**  
+   Open _Docker Desktop_ from **Applications**. At first start macOS will ask for privileged access to install networking components; choose **OK** and enter your password.
+4. **Enable "Use Rosetta" (Intel-only images on Apple Silicon)**  
+   On Apple Silicon Macs open _Settings → Features in development → Use Rosetta for x86/amd64 emulation_ if you need to run Intel images.
+5. **Adjust resources (optional)**  
+   _Settings → Resources_ allows you to tweak CPUs / Memory / Disk. 2 CPU / 4 GB RAM is plenty for this project.
+6. **Enable Docker Compose V2** (default)  
+   Compose V2 ships as `docker compose` (space, no hyphen). Ensure **Settings → General → Use Docker Compose V2** is checked.
+7. **Verify installation**
+   ```bash
+   docker --version      # e.g. Docker version 24.x
+   docker compose version
+   ```
+   Both commands should output versions without error.
+
+> ⚠️ **Tip**: If you previously used tools like _Colima_ or _Docker-Machine_, stop them to avoid port conflicts.
+
+With Docker Desktop running you can spin up the local stack from the project root:
+
+```bash
+docker compose up --build   # Next.js + PostgreSQL
+```
+
+---
+
 This repository ships with a multi-stage `Dockerfile` and a `docker-compose.yml` for a full local stack.
 
 ```bash
