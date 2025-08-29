@@ -1,6 +1,6 @@
 # Trampolin Web – Next.js SaaS Scaffold
 
-A production-ready [Next.js 14](https://nextjs.org) application scaffolded with **TypeScript**, **Tailwind CSS**, strict ESLint/Prettier settings, Husky Git hooks and Docker support (coming next tasks).
+A production-ready [Next.js 14](https://nextjs.org) SaaS scaffold with **TypeScript**, **Tailwind CSS**, strict ESLint/Prettier, Husky Git hooks and built-in Docker support.
 
 ---
 
@@ -8,7 +8,7 @@ A production-ready [Next.js 14](https://nextjs.org) application scaffolded with 
 
 | Tool    | Version (tested)        | Notes                                                                                                |
 | ------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| Node.js | ≥ 18.x (LTS)            | Use [nvm](https://github.com/nvm-sh/nvm) or [fnm](https://github.com/Schniz/fnm) to manage versions. |
+| Node.js | ≥ 20.x (LTS)            | Use [nvm](https://github.com/nvm-sh/nvm) or [fnm](https://github.com/Schniz/fnm) to manage versions. |
 | npm     | comes with Node (≥ 9.x) | pnpm/yarn/bun also work; commands below use npm.                                                     |
 | Git     | any recent              | required for Husky hooks.                                                                            |
 | Docker  | **optional**            | Needed when you reach the Docker setup task.                                                         |
@@ -83,12 +83,17 @@ Copy `.env.example` to `.env.local` and fill in values as you add features (data
 
 ---
 
-## 🐳 Docker (upcoming)
+## 🐳 Docker
 
-A multi-stage `Dockerfile` and `docker-compose.yml` will be added in task **1.3**. When available you’ll be able to:
+This repository ships with a multi-stage `Dockerfile` and a `docker-compose.yml` for a full local stack.
 
 ```bash
+# development stack (Next.js dev server + Postgres)
 docker compose up --build
+
+# build & run production image
+docker build -t trampolin-web .
+docker run -p 3000:3000 -e NODE_ENV=production trampolin-web
 ```
 
 for a one-command local stack.
