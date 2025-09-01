@@ -5,7 +5,7 @@ services:
       repo: BrightOnAnalytics/trampolin-web
       branch: main
       deploy_on_push: true
-    build_command: npx prisma migrate deploy && npm run build
+    build_command: rm -rf .next && npx prisma migrate deploy && npm run build
     run_command: npm start
     envs:
       - key: NODE_ENV
