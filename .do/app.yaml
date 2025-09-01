@@ -6,6 +6,11 @@ services:
       branch: main
       deploy_on_push: true
     dockerfile_path: Dockerfile
+    build_args:
+      - key: STRIPE_SECRET_KEY
+        value: ${STRIPE_SECRET_KEY}
+      - key: DATABASE_URL
+        value: ${DATABASE_URL}
     envs:
       - key: NODE_ENV
         value: production

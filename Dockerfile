@@ -1,5 +1,9 @@
 # --- Build Stage ---------------------------------------------------------
 FROM node:22-alpine AS builder
+
+# Define build-time arguments for secrets
+ARG STRIPE_SECRET_KEY
+ARG DATABASE_URL
 WORKDIR /app
 
 # Install dependencies first (leverages Docker layer cache)
