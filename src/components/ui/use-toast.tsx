@@ -18,21 +18,24 @@ const ToastContext = React.createContext<ToastContextType | undefined>(undefined
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ToastProps[]>([]);
 
-  const toast = React.useCallback(({ title, description, variant = 'default' }: ToastProps) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((currentToasts) => [...currentToasts, { id, title, description, variant }]);
-
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-      dismiss(id);
-    }, 5000);
-
-    return id;
-  }, []);
-
   const dismiss = React.useCallback((id: string) => {
     setToasts((currentToasts) => currentToasts.filter((toast) => toast.id !== id));
   }, []);
+
+  const toast = React.useCallback(
+    ({ title, description, variant = 'default' }: ToastProps) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      setToasts((currentToasts) => [...currentToasts, { id, title, description, variant }]);
+
+      // Auto-dismiss after 5 seconds
+      setTimeout(() => {
+        dismiss(id);
+      }, 5000);
+
+      return id;
+    },
+    [dismiss],
+  );
 
   const value = React.useMemo(
     () => ({

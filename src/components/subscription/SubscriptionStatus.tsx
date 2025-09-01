@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
 interface Subscription {
@@ -23,13 +23,7 @@ export default function SubscriptionStatus({ onSubscriptionChange }: Subscriptio
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (session?.user) {
-      fetchSubscription();
-    }
-  }, [session]);
-
-  const fetchSubscription = async () => {
+  const fetchSubscription = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -59,7 +53,13 @@ export default function SubscriptionStatus({ onSubscriptionChange }: Subscriptio
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [onSubscriptionChange]);
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchSubscription();
+    }
+  }, [session, fetchSubscription]);
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
@@ -126,7 +126,7 @@ export default function SubscriptionStatus({ onSubscriptionChange }: Subscriptio
     return (
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="mb-4 text-lg font-medium text-gray-900">Subscription Status</h3>
-        <p className="mb-4 text-gray-600">You don't have an active subscription.</p>
+        <p className="mb-4 text-gray-600">You don&apos;t have an active subscription.</p>
         <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
           <p className="text-sm text-blue-800">
             Subscribe to unlock premium features and get the most out of our platform.

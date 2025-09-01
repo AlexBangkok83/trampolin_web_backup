@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import SubscriptionStatus from '@/components/subscription/SubscriptionStatus';
 import SubscriptionCard from '@/components/subscription/SubscriptionCard';
@@ -58,7 +57,6 @@ interface Subscription {
 }
 
 export default function SubscriptionPage() {
-  const { data: session } = useSession();
   const [currentSubscription, setCurrentSubscription] = useState<Subscription | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 

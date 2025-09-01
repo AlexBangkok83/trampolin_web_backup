@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/nextjs';
 
 interface AnalyticsData {
@@ -44,7 +44,7 @@ export function useAnalyticsData() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = useCallback(async () => {
     try {
       setLoading(true);
       const token = await getToken();
@@ -68,11 +68,11 @@ export function useAnalyticsData() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken]);
 
   useEffect(() => {
     fetchAnalyticsData();
-  }, []);
+  }, [fetchAnalyticsData]);
 
   const refetch = () => {
     setError(null);

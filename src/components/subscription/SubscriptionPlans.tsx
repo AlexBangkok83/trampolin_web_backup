@@ -46,7 +46,6 @@ export default function SubscriptionPlans({
       });
 
       if (response.ok) {
-        const data = await response.json();
         onSubscribe?.(priceId);
         // Optionally redirect to success page or refresh subscription data
       } else {
@@ -87,10 +86,6 @@ export default function SubscriptionPlans({
     } finally {
       setIsLoading(null);
     }
-  };
-
-  const formatPrice = (price: number, interval: string) => {
-    return `$${price}/${interval}`;
   };
 
   return (
@@ -150,7 +145,7 @@ export default function SubscriptionPlans({
 
               <div className="px-6 pt-6 pb-8">
                 <h4 className="text-sm font-medium tracking-wide text-gray-900 uppercase">
-                  What's included
+                  What&apos;s included
                 </h4>
                 <ul className="mt-6 space-y-4">
                   {plan.features.map((feature, index) => (

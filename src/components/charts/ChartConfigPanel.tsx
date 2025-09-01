@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useChartConfig, Theme } from '@/contexts/ChartConfigContext';
+import { useChartConfig, Theme, ChartConfig } from '@/contexts/ChartConfigContext';
 import { Settings } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -127,7 +127,9 @@ export function ChartConfigPanel() {
                     </Label>
                     <Select
                       value={legendPosition}
-                      onValueChange={(value: any) => updateConfig({ legendPosition: value })}
+                      onValueChange={(value: ChartConfig['legendPosition']) =>
+                        updateConfig({ legendPosition: value })
+                      }
                     >
                       <SelectTrigger className="mt-1 w-full">
                         <SelectValue placeholder="Select position" />

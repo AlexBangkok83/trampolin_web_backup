@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,7 +15,7 @@ import {
 } from 'chart.js';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import { format } from 'date-fns';
-import { useChartData, ChartType } from '@/hooks/useChartData';
+import { useChartData } from '@/hooks/useChartData';
 
 // Register ChartJS components
 ChartJS.register(

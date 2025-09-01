@@ -45,7 +45,7 @@ export function UserMenu() {
               )}
             </Menu.Item>
             <Menu.Item>
-              {({ active }) => (
+              {() => (
                 <div>
                   <Link
                     href="/dashboard"

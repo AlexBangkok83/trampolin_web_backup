@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       // Update user with Stripe customer ID
       await prisma.user.update({
         where: { id: user.id },
-        data: { stripeCustomerId: customerId } as unknown as any,
+        data: { stripeCustomerId: customerId },
       });
     }
 

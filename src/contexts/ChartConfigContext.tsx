@@ -6,7 +6,7 @@ import { ChartOptions } from 'chart.js';
 export type Theme = 'light' | 'dark' | 'blue' | 'green' | 'purple';
 export type ChartType = 'line' | 'bar' | 'pie' | 'doughnut';
 
-interface ChartConfig {
+export interface ChartConfig {
   theme: Theme;
   animation: boolean;
   animationDuration: number;
