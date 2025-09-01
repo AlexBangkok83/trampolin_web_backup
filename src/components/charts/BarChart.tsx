@@ -12,6 +12,7 @@ import {
   ChartData,
   ChartOptions,
 } from 'chart.js';
+import { useChartConfig } from '@/contexts/ChartConfigContext';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -23,29 +24,21 @@ interface BarChartProps {
 }
 
 export function BarChart({ data, options, className }: BarChartProps) {
-  const defaultOptions: ChartOptions<'bar'> = {
+  const { getChartOptions } = useChartConfig();
+
+  // Get chart options from context and merge with any provided options
+  const chartOptions = getChartOptions('bar');
+  const mergedOptions = {
+    ...chartOptions,
+    ...options,
+    // Ensure we have proper responsive settings
     responsive: true,
     maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
-    ...options,
-  };
+  } as ChartOptions<'bar'>;
 
   return (
-    <div className={`h-full min-h-[300px] w-full ${className}`}>
-      <Bar data={data} options={defaultOptions} />
+    <div className={`h-full w-full ${className || ''}`}>
+      <Bar data={data} options={mergedOptions} />
     </div>
   );
 }

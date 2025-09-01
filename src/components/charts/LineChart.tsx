@@ -13,6 +13,7 @@ import {
   ChartData,
   ChartOptions,
 } from 'chart.js';
+import { useChartConfig } from '@/contexts/ChartConfigContext';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -24,29 +25,21 @@ interface LineChartProps {
 }
 
 export function LineChart({ data, options, className }: LineChartProps) {
-  const defaultOptions: ChartOptions<'line'> = {
+  const { getChartOptions } = useChartConfig();
+
+  // Get chart options from context and merge with any provided options
+  const chartOptions = getChartOptions('line');
+  const mergedOptions = {
+    ...chartOptions,
+    ...options,
+    // Ensure we have proper responsive settings
     responsive: true,
     maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-      },
-    },
-    ...options,
-  };
+  } as ChartOptions<'line'>;
 
   return (
-    <div className={`h-full min-h-[300px] w-full ${className}`}>
-      <Line data={data} options={defaultOptions} />
+    <div className={`h-full w-full ${className || ''}`}>
+      <Line data={data} options={mergedOptions} />
     </div>
   );
 }
