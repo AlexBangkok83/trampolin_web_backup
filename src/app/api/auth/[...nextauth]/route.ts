@@ -1,10 +1,7 @@
 import { handler } from '@/lib/auth';
 
-// Required for static export
+// Required for dynamic authentication
 export const dynamic = 'force-dynamic';
-
-// Disable static generation for this route
-export const fetchCache = 'force-no-store';
 
 // Next.js Route Handler (App Router) - matches /api/auth/*
 export { handler as GET, handler as POST };

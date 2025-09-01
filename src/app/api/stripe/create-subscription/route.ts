@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const dynamic = 'force-static';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { createSubscription, createCustomer } from '@/lib/stripe';

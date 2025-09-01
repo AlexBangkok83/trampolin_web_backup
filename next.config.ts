@@ -1,13 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Enable static export
-  output: 'export',
-
-  // Disable image optimization for static export
-  images: {
-    unoptimized: true,
-  },
+  // Use standalone output for containerized deployment
+  output: 'standalone',
 
   // Enable React Strict Mode
   reactStrictMode: true,
@@ -18,16 +13,8 @@ const nextConfig: NextConfig = {
   // Disable source maps in production
   productionBrowserSourceMaps: false,
 
-  // Configure for static export
-  experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
-  },
-
-  // Skip API routes in static export
-  exportPathMap: async () => ({
-    '/': { page: '/' },
-    // Add other static pages here
-  }),
+  // Configure external packages for server components
+  serverExternalPackages: ['@prisma/client'],
 };
 
 export default nextConfig;

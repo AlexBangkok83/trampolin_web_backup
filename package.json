@@ -16,9 +16,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "export": "next export -o out",
-    "postbuild": "npm run export && cp -r public/. out/",
-    "start": "npx serve@latest out -p $PORT",
+    "start": "node .next/standalone/server.js",
     "seed": "npx ts-node prisma/seed.ts",
     "prepare": "husky install",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx src",
