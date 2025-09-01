@@ -4,6 +4,22 @@ import { authOptions } from '@/lib/auth';
 import { createSubscription, createCustomer } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { SubscriptionStatus } from '@prisma/client';
+
+// Type definitions for Stripe integration
+interface UserWithStripeId {
+  id: string;
+  email: string | null;
+  name: string | null;
+  stripeCustomerId: string | null;
+}
+
+interface StripeSubscriptionData {
+  id: string;
+  status: string;
+  current_period_start: number;
+  current_period_end: number;
+}
 
 const createSubscriptionSchema = z.object({
   priceId: z.string().min(1, 'Price ID is required'),
@@ -25,24 +41,18 @@ export async function POST(request: NextRequest) {
     // Get user from database
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        stripeCustomerId: true,
-      },
     });
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    let customerId = user.stripeCustomerId;
+    let customerId: string | null = (user as unknown as UserWithStripeId).stripeCustomerId;
 
     // Create Stripe customer if doesn't exist
     if (!customerId) {
       const customer = await createCustomer({
-        email: user.email,
+        email: user.email!,
         name: user.name || undefined,
         metadata: {
           userId: user.id,
@@ -54,7 +64,7 @@ export async function POST(request: NextRequest) {
       // Update user with Stripe customer ID
       await prisma.user.update({
         where: { id: user.id },
-        data: { stripeCustomerId: customerId },
+        data: { stripeCustomerId: customerId } as unknown as any,
       });
     }
 
@@ -73,11 +83,16 @@ export async function POST(request: NextRequest) {
       data: {
         id: subscription.id,
         userId: user.id,
+        stripeCustomerId: customerId!,
         stripeSubscriptionId: subscription.id,
-        status: subscription.status,
+        status: subscription.status as SubscriptionStatus,
         priceId: validatedData.priceId,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodStart: new Date(
+          (subscription as unknown as StripeSubscriptionData).current_period_start * 1000,
+        ),
+        currentPeriodEnd: new Date(
+          (subscription as unknown as StripeSubscriptionData).current_period_end * 1000,
+        ),
       },
     });
 
@@ -86,8 +101,9 @@ export async function POST(request: NextRequest) {
       subscription: {
         id: subscription.id,
         status: subscription.status,
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
+        current_period_start: (subscription as unknown as StripeSubscriptionData)
+          .current_period_start,
+        current_period_end: (subscription as unknown as StripeSubscriptionData).current_period_end,
       },
     });
   } catch (error) {

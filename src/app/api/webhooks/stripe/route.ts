@@ -5,6 +5,28 @@ import { prisma } from '@/lib/prisma';
 import { SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
 
+// Type definitions for Stripe webhook data
+interface StripeSubscriptionData {
+  id: string;
+  status: string;
+  customer: string;
+  current_period_start: number;
+  current_period_end: number;
+  cancel_at_period_end: boolean;
+  items: {
+    data: Array<{
+      price: {
+        id: string;
+      };
+    }>;
+  };
+}
+
+interface StripeInvoiceData {
+  id: string;
+  subscription: string | null;
+}
+
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
@@ -93,8 +115,12 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
         stripeSubscriptionId: subscription.id,
         status: subscription.status as SubscriptionStatus,
         priceId: subscription.items.data[0]?.price.id || '',
-        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+        currentPeriodStart: new Date(
+          (subscription as unknown as StripeSubscriptionData).current_period_start * 1000,
+        ),
+        currentPeriodEnd: new Date(
+          (subscription as unknown as StripeSubscriptionData).current_period_end * 1000,
+        ),
       },
     });
 
@@ -125,8 +151,12 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       data: {
         status: subscription.status as SubscriptionStatus,
         priceId: subscription.items.data[0]?.price.id || existingSubscription.priceId,
-        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
-        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
+        currentPeriodStart: new Date(
+          (subscription as unknown as StripeSubscriptionData).current_period_start * 1000,
+        ),
+        currentPeriodEnd: new Date(
+          (subscription as unknown as StripeSubscriptionData).current_period_end * 1000,
+        ),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         updatedAt: new Date(),
       },
@@ -164,12 +194,12 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   try {
     console.log('Processing payment succeeded:', invoice.id);
 
-    if (!invoice.subscription) {
+    if (!(invoice as unknown as StripeInvoiceData).subscription) {
       console.log('Invoice not associated with subscription, skipping');
       return;
     }
 
-    const subscriptionId = (invoice as any).subscription as string;
+    const subscriptionId = (invoice as unknown as StripeInvoiceData).subscription as string;
 
     // Update subscription to active if payment succeeded
     await prisma.subscription.updateMany({
@@ -191,12 +221,12 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   try {
     console.log('Processing payment failed:', invoice.id);
 
-    if (!invoice.subscription) {
+    if (!(invoice as unknown as StripeInvoiceData).subscription) {
       console.log('Invoice not associated with subscription, skipping');
       return;
     }
 
-    const subscriptionId = (invoice as any).subscription as string;
+    const subscriptionId = (invoice as unknown as StripeInvoiceData).subscription as string;
 
     // Update subscription status based on failure
     await prisma.subscription.updateMany({

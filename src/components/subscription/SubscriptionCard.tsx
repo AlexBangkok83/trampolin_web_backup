@@ -78,7 +78,7 @@ export default function SubscriptionCard({
     return (
       <div className="rounded-lg bg-white p-6 shadow">
         <h3 className="mb-4 text-lg font-medium text-gray-900">Subscription</h3>
-        <p className="mb-4 text-gray-600">You don't have an active subscription.</p>
+        <p className="mb-4 text-gray-600">You don&apos;t have an active subscription.</p>
         <button
           onClick={onUpdate}
           className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -103,7 +103,7 @@ export default function SubscriptionCard({
       <div className="space-y-3">
         <div>
           <p className="text-sm text-gray-600">Plan ID</p>
-          <p className="font-medium">{subscription.priceId}</p>
+          <p>You&apos;re currently on the {subscription.priceId} plan.</p>
         </div>
 
         <div>
