@@ -23,6 +23,8 @@ interface UseChartDataReturn<K extends ChartType> {
   error: Error | null;
   refreshData: () => Promise<void>;
   lastUpdated: Date | null;
+  retryCount: number;
+  isStale: boolean;
 }
 
 export function useChartData<T extends Record<string, unknown>, K extends ChartType = 'line'>({
@@ -43,7 +45,13 @@ export function useChartData<T extends Record<string, unknown>, K extends ChartT
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
   const isMounted = useRef(true);
+  const maxRetries = 3;
+  const retryDelay = 1000; // 1 second
+
+  // Calculate if data is stale (older than 10 minutes)
+  const isStale = lastUpdated ? Date.now() - lastUpdated.getTime() > 600000 : true;
 
   // Process data and update chart
   const processData = useCallback(
@@ -80,31 +88,49 @@ export function useChartData<T extends Record<string, unknown>, K extends ChartT
     [xField, yField, label, type],
   );
 
-  // Fetch data from the provided dataFetcher
-  const fetchData = useCallback(async () => {
-    if (!dataFetcher) return;
+  // Fetch data with retry logic
+  const fetchData = useCallback(
+    async (retryAttempt = 0) => {
+      if (!dataFetcher) return;
 
-    if (isLoading) return; // Prevent concurrent fetches
+      if (isLoading && retryAttempt === 0) return; // Prevent concurrent fetches on initial call
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      if (retryAttempt === 0) {
+        setError(null);
+        setRetryCount(0);
+      }
 
-    try {
-      const result = await dataFetcher();
-      if (isMounted.current) {
-        processData(result);
+      try {
+        const result = await dataFetcher();
+        if (isMounted.current) {
+          processData(result);
+          setRetryCount(0); // Reset retry count on success
+        }
+      } catch (err) {
+        if (isMounted.current) {
+          const error = err instanceof Error ? err : new Error('Failed to fetch chart data');
+          setError(error);
+          setRetryCount(retryAttempt + 1);
+
+          // Retry logic with exponential backoff
+          if (retryAttempt < maxRetries) {
+            const delay = retryDelay * Math.pow(2, retryAttempt);
+            setTimeout(() => {
+              if (isMounted.current) {
+                fetchData(retryAttempt + 1);
+              }
+            }, delay);
+          }
+        }
+      } finally {
+        if (isMounted.current && retryAttempt === 0) {
+          setIsLoading(false);
+        }
       }
-    } catch (err) {
-      if (isMounted.current) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch chart data'));
-        // Don't throw error here to allow retry on next interval
-      }
-    } finally {
-      if (isMounted.current) {
-        setIsLoading(false);
-      }
-    }
-  }, [dataFetcher, processData, isLoading]);
+    },
+    [dataFetcher, processData, isLoading, maxRetries, retryDelay],
+  );
 
   // Manual refresh function exposed to consumers
   const refreshData = useCallback(async () => {
@@ -147,6 +173,8 @@ export function useChartData<T extends Record<string, unknown>, K extends ChartT
     error,
     refreshData,
     lastUpdated,
+    retryCount,
+    isStale,
   };
 }
 

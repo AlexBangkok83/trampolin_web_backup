@@ -12,10 +12,10 @@ import {
   Title,
   Tooltip,
   Legend,
-  ChartType,
 } from 'chart.js';
-import { Chart } from 'react-chartjs-2';
+import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import { format } from 'date-fns';
+import { useChartData, ChartType } from '@/hooks/useChartData';
 
 // Register ChartJS components
 ChartJS.register(
@@ -60,6 +60,8 @@ const ChartCard = ({
   lastUpdated,
   onRefresh,
   isLoading = false,
+  error,
+  retryCount,
 }: {
   title: string;
   description: string;
@@ -68,6 +70,8 @@ const ChartCard = ({
   lastUpdated?: Date | null;
   onRefresh?: () => Promise<void>;
   isLoading?: boolean;
+  error?: Error | null;
+  retryCount?: number;
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -124,11 +128,67 @@ const ChartCard = ({
           </button>
         )}
       </div>
-      <div className="h-64">{children}</div>
+      <div className="h-64">
+        {error ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="text-center">
+              <div className="mb-2 text-red-500">
+                <svg
+                  className="mx-auto h-8 w-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              </div>
+              <p className="text-sm text-red-600 dark:text-red-400">{error.message}</p>
+              {retryCount && retryCount > 0 && (
+                <p className="mt-1 text-xs text-gray-500">Retry attempt: {retryCount}/3</p>
+              )}
+              {onRefresh && (
+                <button
+                  onClick={onRefresh}
+                  className="mt-2 rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
+                >
+                  Retry
+                </button>
+              )}
+            </div>
+          </div>
+        ) : (
+          children
+        )}
+      </div>
       {lastUpdated && (
-        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          Last updated: {format(lastUpdated, 'MMM d, yyyy h:mm a')}
-        </p>
+        <div className="mt-2 flex items-center justify-between">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Last updated: {format(lastUpdated, 'MMM d, yyyy h:mm a')}
+          </p>
+          <div className="flex items-center gap-1">
+            <div
+              className={`h-2 w-2 rounded-full ${
+                Date.now() - lastUpdated.getTime() < 60000
+                  ? 'bg-green-500'
+                  : Date.now() - lastUpdated.getTime() < 300000
+                    ? 'bg-yellow-500'
+                    : 'bg-red-500'
+              }`}
+            ></div>
+            <span className="text-xs text-gray-400">
+              {Date.now() - lastUpdated.getTime() < 60000
+                ? 'Fresh'
+                : Date.now() - lastUpdated.getTime() < 300000
+                  ? 'Recent'
+                  : 'Stale'}
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -187,78 +247,6 @@ const fetchRevenueData = async (): Promise<RevenueSource[]> => {
   });
 };
 
-// Custom hook for chart data
-const useChartData = <T extends Record<string, unknown>, K extends ChartType>(options: {
-  dataFetcher: () => Promise<T[]>;
-  xField: keyof T;
-  yField: keyof T;
-  label: string;
-  type: K;
-  refreshInterval?: number;
-}) => {
-  const [data, setData] = useState<T[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-  const fetchData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const result = await options.dataFetcher();
-      setData(result);
-      setLastUpdated(new Date());
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch data'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [options]);
-
-  useEffect(() => {
-    fetchData();
-
-    if (options.refreshInterval) {
-      const interval = setInterval(fetchData, options.refreshInterval * 1000);
-      return () => clearInterval(interval);
-    }
-  }, [fetchData, options.refreshInterval]);
-
-  // Format data for Chart.js
-  const chartData = {
-    labels: data.map((item) => String(item[options.xField])),
-    datasets: [
-      {
-        label: options.label,
-        data: data.map((item) => Number(item[options.yField])),
-        backgroundColor: [
-          'rgba(99, 102, 241, 0.8)',
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(14, 165, 233, 0.8)',
-          'rgba(8, 145, 178, 0.8)',
-          'rgba(6, 95, 70, 0.8)',
-        ],
-        borderColor: [
-          'rgba(99, 102, 241, 1)',
-          'rgba(59, 130, 246, 1)',
-          'rgba(14, 165, 233, 1)',
-          'rgba(8, 145, 178, 1)',
-          'rgba(6, 95, 70, 1)',
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  return {
-    chartData,
-    isLoading,
-    error,
-    refreshData: fetchData,
-    lastUpdated,
-  };
-};
-
 export default function DashboardPage() {
   // User Growth Chart
   const {
@@ -266,6 +254,8 @@ export default function DashboardPage() {
     isLoading: isUserGrowthLoading,
     refreshData: refreshUserGrowth,
     lastUpdated: userGrowthLastUpdated,
+    error: userGrowthError,
+    retryCount: userGrowthRetryCount,
   } = useChartData<UserGrowthData, 'line'>({
     dataFetcher: fetchUserGrowthData,
     xField: 'month',
@@ -281,6 +271,8 @@ export default function DashboardPage() {
     isLoading: isSalesLoading,
     refreshData: refreshSales,
     lastUpdated: salesLastUpdated,
+    error: salesError,
+    retryCount: salesRetryCount,
   } = useChartData<SalesData, 'bar'>({
     dataFetcher: fetchSalesData,
     xField: 'quarter',
@@ -296,6 +288,8 @@ export default function DashboardPage() {
     isLoading: isTrafficLoading,
     refreshData: refreshTraffic,
     lastUpdated: trafficLastUpdated,
+    error: trafficError,
+    retryCount: trafficRetryCount,
   } = useChartData<TrafficSource, 'doughnut'>({
     dataFetcher: fetchTrafficData,
     xField: 'device',
@@ -311,6 +305,8 @@ export default function DashboardPage() {
     isLoading: isRevenueLoading,
     refreshData: refreshRevenue,
     lastUpdated: revenueLastUpdated,
+    error: revenueError,
+    retryCount: revenueRetryCount,
   } = useChartData<RevenueSource, 'pie'>({
     dataFetcher: fetchRevenueData,
     xField: 'source',
@@ -357,89 +353,49 @@ export default function DashboardPage() {
             isLoading={isUserGrowthLoading}
             onRefresh={refreshUserGrowth}
             lastUpdated={userGrowthLastUpdated}
+            error={userGrowthError}
+            retryCount={userGrowthRetryCount}
           >
-            <Chart
-              type="line"
-              data={userGrowthData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'top' as const,
-                  },
-                },
-              }}
-            />
+            <Line data={userGrowthData} />
           </ChartCard>
 
           {/* Sales */}
           <ChartCard
-            title="Quarterly Sales"
-            description="Sales performance by quarter"
+            title="Sales Performance"
+            description="Quarterly sales figures"
             isLoading={isSalesLoading}
             onRefresh={refreshSales}
             lastUpdated={salesLastUpdated}
+            error={salesError}
+            retryCount={salesRetryCount}
           >
-            <Chart
-              type="bar"
-              data={salesData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'top' as const,
-                  },
-                },
-              }}
-            />
+            <Bar data={salesData} />
           </ChartCard>
 
           {/* Traffic Sources */}
           <ChartCard
             title="Traffic Sources"
-            description="Distribution of traffic by device"
+            description="Device breakdown of website traffic"
             isLoading={isTrafficLoading}
             onRefresh={refreshTraffic}
             lastUpdated={trafficLastUpdated}
+            error={trafficError}
+            retryCount={trafficRetryCount}
           >
-            <Chart
-              type="doughnut"
-              data={trafficData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'right' as const,
-                  },
-                },
-              }}
-            />
+            <Doughnut data={trafficData} />
           </ChartCard>
 
           {/* Revenue Sources */}
           <ChartCard
             title="Revenue Sources"
-            description="Breakdown of revenue by category"
+            description="Revenue breakdown by source"
             isLoading={isRevenueLoading}
             onRefresh={refreshRevenue}
             lastUpdated={revenueLastUpdated}
+            error={revenueError}
+            retryCount={revenueRetryCount}
           >
-            <Chart
-              type="pie"
-              data={revenueData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: 'right' as const,
-                  },
-                },
-              }}
-            />
+            <Pie data={revenueData} />
           </ChartCard>
         </div>
       </div>
