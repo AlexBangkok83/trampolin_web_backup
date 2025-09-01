@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install dependencies first (leverages Docker layer cache)
 COPY package*.json ./
-RUN npm install --production=false --legacy-peer-deps
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Copy source after deps to avoid busting cache on every change
 COPY . .
