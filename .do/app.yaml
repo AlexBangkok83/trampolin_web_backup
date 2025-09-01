@@ -5,7 +5,24 @@ services:
       repo: BrightOnAnalytics/trampolin-web
       branch: main
       deploy_on_push: true
-    build_command: npm ci && npm run build && npm prune --production
+    build_command: |
+      # Clean previous builds
+      rm -rf .next/
+      rm -rf .next/standalone/
+      
+      # Install all dependencies
+      npm ci
+      
+      # Build the application with production settings
+      NODE_ENV=production \
+      NEXT_TELEMETRY_DISABLED=1 \
+      next build
+      
+      # Prune dev dependencies after build
+      npm prune --production
+      
+      # Ensure proper permissions for the .next directory
+      chmod -R 755 .next
     run_command: npm start
     envs:
       - key: STRIPE_SECRET_KEY
