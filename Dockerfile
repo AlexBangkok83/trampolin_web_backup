@@ -1,10 +1,10 @@
 # --- Build Stage ---------------------------------------------------------
-FROM node:22.16.0-alpine AS builder
+FROM node:22.16.0 AS builder
+WORKDIR /app
 
 # Define build-time arguments for secrets
 ARG STRIPE_SECRET_KEY
 ARG DATABASE_URL
-WORKDIR /app
 
 # Install dependencies first (leverages Docker layer cache)
 COPY package*.json ./
@@ -23,7 +23,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # --- Production Stage ----------------------------------------------------
-FROM node:22.16.0-alpine AS runner
+FROM node:22.16.0 AS runner
 WORKDIR /app
 
 # Copy only necessary files from builder
