@@ -1,5 +1,12 @@
 {
-  "name": "web",
+  "name": "trampolin-web",
+  "description": "SaaS analytics platform for CSV data visualization and analysis.",
+  "author": "BrightOn Analytics",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-github-username/trampolin-web.git"
+  },
+  "license": "MIT",
   "version": "0.1.0",
   "private": true,
   "engines": {

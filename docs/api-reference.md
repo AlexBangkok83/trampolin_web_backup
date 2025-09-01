@@ -6,6 +6,27 @@ This document provides a detailed reference for all API endpoints available in t
 
 Endpoints that require authentication are protected using NextAuth.js. Authenticated requests must include a valid session cookie. Unauthenticated requests to protected endpoints will receive a `401 Unauthorized` response.
 
+### Authentication Flow
+
+The application uses NextAuth.js to handle user authentication. The flow is as follows:
+
+1.  **Login Request**: The user submits their credentials via the `/api/auth/signin` endpoint.
+2.  **Session Creation**: Upon successful authentication, a session is created, and a secure, HTTP-only cookie is sent to the client.
+3.  **Authenticated Requests**: For all subsequent requests to protected API routes, the client must include this session cookie. The backend validates the cookie to authorize the request.
+4.  **OAuth**: For social logins, the user is redirected to the OAuth provider. After authorization, the provider redirects back to `/api/auth/callback/[provider]`, where a session is established.
+
+---
+
+## API Versioning
+
+Currently, the API is not versioned. All endpoints are considered to be on version 1. Future versions will be introduced with a path prefix, such as `/api/v2/`.
+
+---
+
+## Rate Limiting
+
+Rate limiting is not yet implemented. When added, details about the rate limits will be included here. Requests that exceed the rate limit will receive a `429 Too Many Requests` response.
+
 ---
 
 ## Auth
@@ -362,5 +383,49 @@ Returns a JSON object containing chart-ready data for the last six months.
 
 - `401 Unauthorized`: If the user is not authenticated.
 - `500 Internal Server Error`: If an error occurs while fetching data.
+
+---
+
+## Database Models
+
+The application's data is structured using the following Prisma models.
+
+### Core Models
+
+- **`User`**: Represents a user account. It stores essential user information, their role, and relationships to other models like subscriptions and CSV uploads.
+  - `id`: Unique identifier for the user.
+  - `email`: User's email address (unique).
+  - `stripeCustomerId`: The user's corresponding customer ID in Stripe.
+  - `role`: The user's assigned role (e.g., 'admin', 'user').
+
+- **`Role`**: Defines user roles within the application, allowing for different permission levels.
+
+### Authentication Models
+
+These models are used by the NextAuth.js adapter to manage sessions and OAuth accounts.
+
+- **`Account`**: Stores information for OAuth accounts linked to a user.
+- **`Session`**: Manages user session data.
+- **`VerificationToken`**: Used for email verification tokens.
+
+### Subscription & Billing Models
+
+- **`Subscription`**: Tracks a user's subscription status with Stripe.
+  - `status`: The current state of the subscription (e.g., `active`, `canceled`), managed by the `SubscriptionStatus` enum.
+  - `stripeSubscriptionId`: The unique ID for the subscription in Stripe.
+  - `priceId`: The ID of the Stripe price plan the user is subscribed to.
+  - `currentPeriodEnd`: The end date of the current billing cycle.
+
+### CSV Data Models
+
+- **`CsvUpload`**: Stores metadata for each uploaded CSV file.
+  - `status`: The processing status of the upload (`pending`, `processing`, `completed`, `failed`), managed by the `CsvUploadStatus` enum.
+  - `filename`: The name of the file stored on the server.
+  - `totalRows`, `validRows`: Counts of total and successfully processed rows.
+  - `headers`: The column headers extracted from the CSV file.
+
+- **`CsvRow`**: Stores the data for each individual row from a `CsvUpload`.
+  - `data`: The row's content, stored as a JSON object.
+  - `uploadId`: A foreign key linking the row back to its parent `CsvUpload`.
 
 ---

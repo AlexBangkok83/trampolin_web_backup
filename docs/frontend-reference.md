@@ -127,4 +127,106 @@ Located at `src/contexts/ChartConfigContext.tsx`, this context provider manages 
 - **Provided State**: `theme`, `animation`, `showLegend`, `showGrid`, etc.
 - **Provided Functions**: `updateConfig`, `getChartOptions`.
 
+## Dashboard Components
+
+Located in `src/components/dashboard/`, these components form the structural layout of the application's user dashboard.
+
+### DashboardLayout
+
+A wrapper component that establishes the main layout for all dashboard pages. It integrates the `Sidebar` and `Header` and provides a consistent structure for page content.
+
+- **Props**:
+  - `children`: `ReactNode` - The main content of the page.
+  - `title`: `string` - The title displayed at the top of the page.
+  - `description`: `string` (optional) - A subtitle or description displayed below the title.
+  - `headerActions`: `ReactNode` (optional) - Buttons or other elements to display in the page header.
+
+### Header
+
+The top navigation bar within the dashboard. It includes a search input, theme toggle, notifications icon, and a user profile menu.
+
+- **Functionality**: Manages the open/close state of the mobile sidebar.
+
+### Sidebar
+
+The main navigation menu for the dashboard, displayed on the left side. It contains links to different sections of the application.
+
+- **Functionality**: Highlights the active navigation link based on the current route. It is responsive and can be toggled on smaller screens.
+
+## Form Components
+
+Located in `src/components/forms/`, these components handle user input and data submission.
+
+### CsvUpload
+
+A component for uploading CSV files with a rich user interface.
+
+- **Location**: `src/components/forms/file-upload/csv-upload.tsx`
+- **Functionality**:
+  - Drag-and-drop file selection.
+  - File size and type validation.
+  - Real-time upload progress display.
+  - Displays success or error messages after upload.
+- **Props**:
+  - `onUploadComplete`: `(result: UploadResult) => void` (optional) - Callback function executed after an upload attempt.
+  - `onUploadStart`: `() => void` (optional) - Callback function executed when an upload begins.
+  - `maxSize`: `number` (optional) - Maximum file size in bytes. Defaults to 10MB.
+
+## Subscription Components
+
+Located in `src/components/subscription/`, these components handle the presentation and management of user subscriptions.
+
+### SubscriptionCard
+
+Displays a summary of the user's current subscription, including status, plan, and billing period. It provides actions to cancel or manage the subscription.
+
+- **Props**:
+  - `subscription`: `object` - The user's subscription data.
+  - `onCancel`: `() => void` (optional) - Callback for when the cancel action is triggered.
+  - `onUpdate`: `() => void` (optional) - Callback for when the manage/update action is triggered.
+
+### SubscriptionPlans
+
+Displays a list of available subscription plans. It allows users to subscribe to a new plan or switch between existing plans.
+
+- **Props**:
+  - `plans`: `PricingPlan[]` - An array of available pricing plans.
+  - `currentPriceId`: `string` (optional) - The ID of the user's current plan, used to highlight it in the list.
+  - `onSubscribe`: `(priceId: string) => void` (optional) - Callback executed when a user subscribes to or updates a plan.
+
+### SubscriptionStatus
+
+Fetches and displays the detailed status of a user's subscription from the backend. It shows loading and error states and provides an option to refresh the data.
+
+- **Props**:
+  - `onSubscriptionChange`: `(subscription: Subscription | null) => void` (optional) - Callback executed when the subscription data is fetched or changed.
+
+## Custom Hooks
+
+Located in `src/hooks/`, these hooks provide reusable logic for data fetching and state management.
+
+### useAnalyticsData
+
+Fetches and manages the state for the main analytics dashboard data from the `/api/analytics` endpoint.
+
+- **Returns**:
+  - `data`: `AnalyticsData | null` - The fetched analytics data, formatted for charts.
+  - `loading`: `boolean` - The current loading state.
+  - `error`: `Error | null` - Any error that occurred during fetching.
+  - `refetch`: `() => void` - A function to manually re-fetch the data.
+
+### useChartData
+
+A generic hook for fetching, processing, and managing data for various chart types. It includes features like auto-refresh, retry logic, and stale data detection.
+
+- **Props**:
+  - `data` or `dataFetcher`: Static data array or a function that returns a promise of data.
+  - `xField`, `yField`: Keys for accessing the x and y values from the data objects.
+  - `type`: The type of chart (`line`, `bar`, `pie`, `doughnut`).
+  - `refreshInterval`: Interval in seconds for auto-refreshing data.
+- **Returns**:
+  - `chartData`: `ChartData` - The data formatted for `react-chartjs-2`.
+  - `isLoading`, `error`, `lastUpdated`, `isStale`.
+  - `refreshData`: `() => Promise<void>` - A function to manually refresh the data.
+
 ---

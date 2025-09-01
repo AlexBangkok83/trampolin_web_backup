@@ -1,9 +1,15 @@
 import * as csv from 'fast-csv';
 
+/**
+ * Represents a single row of data from a parsed CSV file.
+ */
 export interface CsvRow {
   [key: string]: string | number | null;
 }
 
+/**
+ * Represents the complete result of a CSV parsing operation.
+ */
 export interface ParsedCsvData {
   headers: string[];
   rows: CsvRow[];
@@ -12,6 +18,12 @@ export interface ParsedCsvData {
   errors: string[];
 }
 
+/**
+ * Parses a CSV file from a buffer, handling headers, data validation, and errors.
+ * @param buffer - The buffer containing the CSV file content.
+ * @returns A promise that resolves to an array of parsed `CsvRow` objects.
+ * @throws An error if the CSV is malformed, has no headers, or contains too many errors.
+ */
 export async function parseCSV(buffer: Buffer): Promise<CsvRow[]> {
   return new Promise((resolve, reject) => {
     const results: CsvRow[] = [];
@@ -78,6 +90,12 @@ export async function parseCSV(buffer: Buffer): Promise<CsvRow[]> {
   });
 }
 
+/**
+ * Validates and cleans a single row of data.
+ * @param row - The raw data object for the row.
+ * @param headers - The list of expected headers.
+ * @returns A cleaned `CsvRow` object, or `null` if the row is empty.
+ */
 function validateRow(row: Record<string, unknown>, headers: string[]): CsvRow | null {
   const validatedRow: CsvRow = {};
   let hasValidData = false;
@@ -111,6 +129,11 @@ function validateRow(row: Record<string, unknown>, headers: string[]): CsvRow | 
   return validatedRow;
 }
 
+/**
+ * Validates the overall structure of the parsed CSV data, checking for consistency.
+ * @param data - An array of parsed `CsvRow` objects.
+ * @returns An object containing a boolean `isValid`, and arrays of errors and warnings.
+ */
 export function validateCsvStructure(data: CsvRow[]): {
   isValid: boolean;
   errors: string[];
