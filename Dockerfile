@@ -29,7 +29,7 @@ RUN adduser --system --uid 1001 nextjs
 
 # Install only production dependencies
 COPY --from=builder /app/package*.json ./
-RUN npm ci --only=production --legacy-peer-deps && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts --legacy-peer-deps && npm cache clean --force
 
 # Copy all necessary files from builder
 COPY --from=builder /app/.next ./.next
