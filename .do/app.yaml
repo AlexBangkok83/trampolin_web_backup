@@ -1,0 +1,14 @@
+name: trampolin-web
+services:
+  - name: web
+    github:
+      repo: BrightOnAnalytics/trampolin-web
+      branch: main
+      deploy_on_push: true
+    build_command: npx prisma migrate deploy && npm run build
+    run_command: npm start
+    envs:
+      - key: NODE_ENV
+        value: production
+    health_check:
+      http_path: /api/health
