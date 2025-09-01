@@ -5,7 +5,8 @@ services:
       repo: BrightOnAnalytics/trampolin-web
       branch: main
       deploy_on_push: true
-    dockerfile_path: Dockerfile
+    build_command: npm ci && npm run build
+    run_command: npm start
     envs:
       - key: STRIPE_SECRET_KEY
         value: ${STRIPE_SECRET_KEY}
