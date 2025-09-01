@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+// Removed unused useState import
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LineChart, BarChart, PieChart, DoughnutChart } from '@/components/charts';
+import { LineChart, BarChart, DoughnutChart } from '@/components/charts';
 import { useChartData } from '@/hooks/useChartData';
 
 // Sample data for demonstration
@@ -19,7 +19,7 @@ const sampleData = [
 
 export default function AnalyticsDashboard() {
   // Use the custom hook for different chart data
-  const { chartData: revenueData } = useChartData<{ month: string; revenue: number }>({
+  const { chartData: revenueData } = useChartData<{ month: string; revenue: number }, 'line'>({
     data: sampleData,
     xField: 'month',
     yField: 'revenue',
@@ -27,7 +27,7 @@ export default function AnalyticsDashboard() {
     type: 'line',
   });
 
-  const { chartData: usersData } = useChartData<{ month: string; users: number }>({
+  const { chartData: usersData } = useChartData<{ month: string; users: number }, 'line'>({
     data: sampleData,
     xField: 'month',
     yField: 'users',
@@ -35,7 +35,7 @@ export default function AnalyticsDashboard() {
     type: 'line',
   });
 
-  const { chartData: churnData } = useChartData<{ month: string; churn: number }>({
+  const { chartData: churnData } = useChartData<{ month: string; churn: number }, 'bar'>({
     data: sampleData,
     xField: 'month',
     yField: 'churn',
@@ -43,7 +43,15 @@ export default function AnalyticsDashboard() {
     type: 'bar',
   });
 
-  const { chartData: pieData } = useChartData<{ month: string; revenue: number }>({
+  const { chartData: revenueBarData } = useChartData<{ month: string; revenue: number }, 'bar'>({
+    data: sampleData,
+    xField: 'month',
+    yField: 'revenue',
+    label: 'Revenue',
+    type: 'bar',
+  });
+
+  const { chartData: pieData } = useChartData<{ month: string; revenue: number }, 'doughnut'>({
     data: sampleData.slice(0, 4), // Only show first 4 months for pie chart
     xField: 'month',
     yField: 'revenue',
@@ -139,7 +147,7 @@ export default function AnalyticsDashboard() {
               <CardTitle>Monthly Revenue</CardTitle>
             </CardHeader>
             <CardContent className="pl-2">
-              <BarChart data={revenueData} className="h-[400px]" />
+              <BarChart data={revenueBarData} className="h-[400px]" />
             </CardContent>
           </Card>
         </TabsContent>

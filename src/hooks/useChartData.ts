@@ -5,16 +5,6 @@ export type ChartType = 'line' | 'bar' | 'pie' | 'doughnut';
 
 type DataPoint = number | [number, number] | Point | null;
 
-type ChartDatasetWithType<T extends ChartType> = T extends 'line'
-  ? ChartDataset<'line', DataPoint[]>
-  : T extends 'bar'
-    ? ChartDataset<'bar', DataPoint[]>
-    : T extends 'pie'
-      ? ChartDataset<'pie', number[]>
-      : T extends 'doughnut'
-        ? ChartDataset<'doughnut', number[]>
-        : never;
-
 interface UseChartDataProps<T extends Record<string, unknown>, K extends ChartType> {
   // Either provide a data fetcher function or static data
   data?: T[];
@@ -27,15 +17,15 @@ interface UseChartDataProps<T extends Record<string, unknown>, K extends ChartTy
   autoRefresh?: boolean; // whether to auto-refresh on mount
 }
 
-interface UseChartDataReturn<T, K extends ChartType> {
-  chartData: ChartData<K, DataPoint[], unknown> & { type?: K };
+interface UseChartDataReturn<K extends ChartType> {
+  chartData: ChartData<K>;
   isLoading: boolean;
   error: Error | null;
   refreshData: () => Promise<void>;
   lastUpdated: Date | null;
 }
 
-export function useChartData<T extends Record<string, any>, K extends ChartType = 'line'>({
+export function useChartData<T extends Record<string, unknown>, K extends ChartType = 'line'>({
   data: staticData,
   dataFetcher,
   xField,
@@ -44,15 +34,15 @@ export function useChartData<T extends Record<string, any>, K extends ChartType 
   type = 'line' as K,
   refreshInterval = 0,
   autoRefresh = true,
-}: UseChartDataProps<T, K>): UseChartDataReturn<T, K> {
-  const [chartData, setChartData] = useState<ChartData<K, DataPoint[], unknown>>({
+}: UseChartDataProps<T, K>): UseChartDataReturn<K> {
+  const [chartData, setChartData] = useState<ChartData<K>>({
     labels: [],
     datasets: [],
-  });
+  } as ChartData<K>);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isMounted = useRef(true);
 
   // Process data and update chart
@@ -66,19 +56,12 @@ export function useChartData<T extends Record<string, any>, K extends ChartType 
         return isNaN(value) ? 0 : value;
       });
 
-      const dataPoints = values.map((value) => value);
-
       const backgroundColors = generateColors(labels.length, type);
 
-      const baseDataset: ChartDatasetWithType<K> = {
+      const baseDataset: ChartDataset = {
+        type,
         label,
-        data:
-          type === 'pie' || type === 'doughnut'
-            ? values
-            : values.map((value, index) => ({
-                x: String(data[index][xField]),
-                y: value,
-              })),
+        data: values,
         backgroundColor: backgroundColors,
         ...(type === 'line' || type === 'bar'
           ? {
@@ -86,14 +69,12 @@ export function useChartData<T extends Record<string, any>, K extends ChartType 
               borderWidth: 1,
             }
           : {}),
-      } as unknown as ChartDatasetWithType<K>;
-
-      const datasets = [baseDataset];
+      };
 
       setChartData({
         labels,
-        datasets,
-      });
+        datasets: [baseDataset as ChartDataset<K, DataPoint>],
+      } as ChartData<K>);
       setLastUpdated(new Date());
     },
     [xField, yField, label, type],
@@ -115,7 +96,8 @@ export function useChartData<T extends Record<string, any>, K extends ChartType 
       }
     } catch (err) {
       if (isMounted.current) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch data'));
+        setError(err instanceof Error ? err : new Error('Failed to fetch chart data'));
+        // Don't throw error here to allow retry on next interval
       }
     } finally {
       if (isMounted.current) {
@@ -124,90 +106,40 @@ export function useChartData<T extends Record<string, any>, K extends ChartType 
     }
   }, [dataFetcher, processData, isLoading]);
 
-  // Manual refresh function
+  // Manual refresh function exposed to consumers
   const refreshData = useCallback(async () => {
     if (dataFetcher) {
       await fetchData();
-    } else if (staticData) {
-      processData(staticData);
     }
-  }, [dataFetcher, fetchData, staticData, processData]);
-
-  // Set up auto-refresh interval
-  useEffect(() => {
-    // Clear any existing interval
-    if (refreshIntervalRef.current) {
-      clearInterval(refreshIntervalRef.current);
-      refreshIntervalRef.current = null;
-    }
-
-    // Set up new interval if refreshInterval is greater than 0
-    if (refreshInterval > 0 && autoRefresh) {
-      refreshIntervalRef.current = setInterval(() => {
-        if (document.visibilityState === 'visible') {
-          refreshData();
-        }
-      }, refreshInterval * 1000);
-    }
-
-    // Initial data fetch if autoRefresh is true
-    if (autoRefresh) {
-      if (staticData) {
-        processData(staticData);
-      } else if (dataFetcher) {
-        fetchData();
-      }
-    }
-
-    // Cleanup function
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [refreshInterval, autoRefresh, dataFetcher, fetchData, processData, staticData, refreshData]);
-
-  // Process static data if provided
-  useEffect(() => {
-    if (staticData && !dataFetcher) {
-      processData(staticData);
-    }
-  }, [staticData, dataFetcher, processData]);
-
-  // Set up auto-refresh if enabled
-  useEffect(() => {
-    if (refreshInterval > 0 && autoRefresh) {
-      refreshIntervalRef.current = setInterval(() => {
-        if (isMounted.current) {
-          refreshData();
-        }
-      }, refreshInterval * 1000);
-
-      return () => {
-        if (refreshIntervalRef.current) {
-          clearInterval(refreshIntervalRef.current);
-        }
-      };
-    }
-  }, [refreshInterval, autoRefresh, refreshData]);
+  }, [dataFetcher, fetchData]);
 
   // Initial data load
   useEffect(() => {
     isMounted.current = true;
 
-    if (staticData) {
-      processData(staticData);
-    } else if (dataFetcher && !staticData) {
-      fetchData();
+    const loadInitialData = async () => {
+      if (staticData) {
+        processData(staticData);
+      } else if (dataFetcher) {
+        await fetchData();
+      }
+    };
+
+    if (autoRefresh) {
+      loadInitialData();
+    }
+
+    // Set up refresh interval if enabled
+    let intervalId: NodeJS.Timeout;
+    if (refreshInterval > 0 && autoRefresh) {
+      intervalId = setInterval(fetchData, refreshInterval * 1000);
     }
 
     return () => {
       isMounted.current = false;
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
+      if (intervalId) clearInterval(intervalId);
     };
-  }, [dataFetcher, staticData, fetchData, processData]);
+  }, [fetchData, processData, refreshInterval, staticData, autoRefresh, dataFetcher]);
 
   return {
     chartData,
