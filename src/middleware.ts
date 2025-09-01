@@ -1,23 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const PUBLIC_FILE = /\.(.*)$/;
+// This function can be marked `async` if using `await` inside
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const isStaticExport =
+    process.env.NEXT_PHASE === 'phase-export' || process.env.NODE_ENV === 'production';
 
-export async function middleware(req: NextRequest) {
-  const pathname = req.nextUrl.pathname;
-
-  // Skip static files, Next.js internals, and API routes for static export
-  if (PUBLIC_FILE.test(pathname) || pathname.startsWith('/_next') || pathname.startsWith('/api')) {
+  // Skip middleware for static files and Next.js internals
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/static') ||
+    pathname.includes('.')
+  ) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  // For static export, just continue
+  if (isStaticExport) {
+    return NextResponse.next();
+  }
 
-  // Require auth for all /dashboard routes
+  // Apply authentication for protected routes
   if (pathname.startsWith('/dashboard')) {
+    const token = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+
     if (!token) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = '/auth/login';
+      const loginUrl = new URL('/auth/login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
     }
@@ -26,7 +40,7 @@ export async function middleware(req: NextRequest) {
     if (pathname.startsWith('/dashboard/admin')) {
       const role = (token as { role?: string }).role;
       if (role !== 'admin') {
-        const notAllowed = req.nextUrl.clone();
+        const notAllowed = request.nextUrl.clone();
         notAllowed.pathname = '/403';
         return NextResponse.rewrite(notAllowed);
       }

@@ -3,8 +3,8 @@ import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 
 // Required for static export
-export const dynamic = 'force-static';
-export const revalidate = 86400; // Revalidate once per day
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 // Mock data for static export
 const MOCK_DATA = {
