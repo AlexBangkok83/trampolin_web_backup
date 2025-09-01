@@ -20,16 +20,26 @@ export const authOptions: AuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
-        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            passwordHash: true,
+            role: { select: { name: true } },
+          },
+        });
         if (!user?.passwordHash) return null;
         const isValid = await compare(credentials.password, user.passwordHash);
         if (!isValid) return null;
-        return {
+        const result = {
           id: user.id,
           email: user.email ?? undefined,
           name: user.name ?? undefined,
           role: user.role?.name ?? 'user',
         } satisfies { id: string; email?: string; name?: string; role: string };
+        return result;
       },
     }),
   ],
