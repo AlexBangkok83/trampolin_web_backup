@@ -7,9 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Core Commands
 
 - `npm run dev` - Start Next.js development server on http://localhost:3000
-- `npm run build` - Build production version (static export)
-- `npm run export` - Export static files to `out/` directory
-- `npm run start` - Serve static files from `out/` using serve
+- `npm run build` - Build production version
+- `npm run start` - Start production server (next start)
 - `npm run lint` - Run ESLint on TypeScript/JavaScript files in src/
 - `npm run format` - Format files with Prettier
 - `npm test` - Run Jest test suite
@@ -24,28 +23,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture Overview
 
-### Standalone Deployment Configuration
+### Standard Deployment Configuration
 
-This Next.js application is configured for **standalone deployment** on DigitalOcean App Platform:
+This Next.js application is configured for **standard deployment** on DigitalOcean App Platform:
 
-- `output: 'standalone'` in next.config.ts for containerized deployment
+- Uses default Next.js output mode for maximum compatibility
 - Full-stack application with API routes and server-side rendering
-- Build creates a standalone Node.js server in `.next/standalone/`
-- Start command: `node .next/standalone/server.js`
+- Standard Next.js production build in `.next/` directory
+- Start command: `next start` (or `npm start`)
 
 ### App Structure
 
 ```
 src/app/
-├── (marketing)/          # Public pages (landing page)
-├── (dashboard)/          # Protected dashboard routes
 ├── auth/                 # Authentication pages (login, register)
-├── api/                  # API routes (excluded from static export)
+├── api/                  # API routes (server-side endpoints)
 ├── csv-upload/           # CSV data upload functionality
-└── dashboard/            # Protected dashboard sections
-    ├── analytics/        # Data analytics dashboard
-    ├── admin/            # Admin-only pages
-    └── subscription/     # Subscription management
+├── dashboard/            # Protected dashboard sections
+│   ├── analytics/        # Data analytics dashboard
+│   ├── admin/            # Admin-only pages
+│   └── subscription/     # Subscription management
+└── page.tsx              # Simple landing page
 ```
 
 ### Authentication System
@@ -125,10 +123,18 @@ This is a SaaS analytics platform focused on CSV data:
 
 ### Deployment Configuration
 
-- **DigitalOcean App Platform**: Uses standalone output with Node.js runtime
-- **Environment Variables**: Requires DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL
+- **DigitalOcean App Platform**: Uses standard Next.js build with Node.js runtime
+- **Build Command**: `npm run build`
+- **Start Command**: `npm start` (runs `next start`)
+- **Required Environment Variables**:
+  - `DATABASE_URL` - PostgreSQL database connection string
+  - `NEXTAUTH_SECRET` - Secret key for NextAuth.js (generate with `openssl rand -base64 32`)
+  - `NEXTAUTH_URL` - Full URL of your application (e.g., `https://yourapp.ondigitalocean.app`)
+  - `STRIPE_SECRET_KEY` - Stripe secret key (optional, for payments)
+  - `STRIPE_WEBHOOK_SECRET` - Stripe webhook secret (optional, for payments)
 - **Health Check**: Available at `/api/health` endpoint
-- **Static Assets**: Public files are automatically included in standalone build
+- **Port**: Application runs on port 3000 by default (configurable via PORT env var)
+- **Known Issue Fix**: Removed marketing page that was causing client reference manifest errors in Next.js 15.5.2
 
 ### Development Workflow
 
