@@ -1,14 +1,9 @@
 # --- Build Stage ---------------------------------------------------------
-FROM node:22.16.0 AS builder
+FROM node:22.16.0-alpine AS builder
 WORKDIR /app
-
-# Define build-time arguments for secrets
-ARG STRIPE_SECRET_KEY
-ARG DATABASE_URL
 
 # Install dependencies first (leverages Docker layer cache)
 COPY package*.json ./
-# RUN npm install --omit=dev --legacy-peer-deps
 RUN npm install --legacy-peer-deps
 
 # Copy source after deps to avoid busting cache on every change
@@ -17,18 +12,15 @@ COPY . .
 # Next.js requires NEXT_TELEMETRY_DISABLED for CI builds
 ENV NEXT_TELEMETRY_DISABLED=1
 
-ENV STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-ENV DATABASE_URL=${DATABASE_URL}
-ENV NODE_ENV=production
-
-# Generate Prisma Client
+# Generate Prisma Client (requires a dummy DATABASE_URL for schema generation)
+ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 RUN npx prisma generate
 
 # Build the application
 RUN npm run build
 
 # --- Production Stage ----------------------------------------------------
-FROM node:22.16.0 AS runner
+FROM node:22.16.0-alpine AS runner
 WORKDIR /app
 
 # Copy only necessary files from builder
