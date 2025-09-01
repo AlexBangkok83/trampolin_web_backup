@@ -8,7 +8,6 @@ services:
     build_command: |
       # Clean previous builds
       rm -rf .next/
-      rm -rf .next/standalone/
       
       # Install all dependencies
       npm ci
@@ -20,10 +19,7 @@ services:
       
       # Prune dev dependencies after build
       npm prune --production
-      
-      # Ensure proper permissions for the .next directory
-      chmod -R 755 .next
-    run_command: npm start
+    run_command: next start -p $PORT
     envs:
       - key: STRIPE_SECRET_KEY
         value: ${STRIPE_SECRET_KEY}
