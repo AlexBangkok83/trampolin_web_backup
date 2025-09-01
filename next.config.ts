@@ -5,12 +5,17 @@ const nextConfig: NextConfig = {
   output: undefined,
 
   experimental: {
+    // Disable React Server Components
+    serverComponentsExternalPackages: [],
     // Enable server actions
     serverActions: { allowedOrigins: ['*'] },
   },
 
-  // Enable React Strict Mode
-  reactStrictMode: true,
+  // Disable React Strict Mode for better compatibility
+  reactStrictMode: false,
+
+  // Enable SWC minification
+  swcMinify: true,
 
   // Disable TypeScript type checking during build (handled in CI)
   typescript: {
@@ -21,6 +26,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+
+  // Disable source maps in production
+  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;

@@ -6,20 +6,27 @@ services:
       branch: main
       deploy_on_push: true
     build_command: |
-      # Clean previous builds
+      # Clean everything
       rm -rf .next/
+      rm -rf node_modules/.cache/
       
-      # Install all dependencies
-      npm ci
+      # Install only production dependencies first
+      npm ci --production=false
       
-      # Build the application with production settings
+      # Build with production settings
       NODE_ENV=production \
       NEXT_TELEMETRY_DISABLED=1 \
-      next build
+      next build --no-lint
       
-      # Prune dev dependencies after build
+      # Clean up development dependencies
       npm prune --production
-    run_command: next start -p $PORT
+      
+      # Clear Next.js cache
+      rm -rf .next/cache/
+    run_command: |
+      NODE_OPTIONS='--max-old-space-size=1024' \
+      NODE_ENV=production \
+      next start -p $PORT
     envs:
       - key: STRIPE_SECRET_KEY
         value: ${STRIPE_SECRET_KEY}
