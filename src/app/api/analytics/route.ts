@@ -1,12 +1,43 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs';
+import { currentUser } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
+
+// Type definitions for query results
+interface UploadsByMonth {
+  month: Date;
+  count: bigint;
+}
+
+interface RowsByMonth {
+  month: Date;
+  count: bigint;
+}
+
+interface FileSizeDistribution {
+  size_category: string;
+  count: bigint;
+}
+
+interface StatusDistribution {
+  status: string;
+  count: bigint;
+}
+
+interface ChartData {
+  labels: string[];
+  datasets: Array<{
+    label: string;
+    data: number[];
+    borderColor: string;
+    backgroundColor: string;
+  }>;
+}
 
 export async function GET() {
   try {
     // Authenticate the user
-    const { userId } = auth();
-    if (!userId) {
+    const user = await currentUser();
+    if (!user?.id) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
@@ -15,56 +46,56 @@ export async function GET() {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     // Get uploads count by month for the current user
-    const uploadsByMonth = await prisma.$queryRaw`
+    const uploadsByMonth = await prisma.$queryRaw<UploadsByMonth[]>`
       SELECT 
         DATE_TRUNC('month', "createdAt") as month,
-        COUNT(*) as count
+        COUNT(*)::bigint as count
       FROM "CsvUpload"
-      WHERE "userId" = ${userId}
+      WHERE "userId" = ${user.id}
         AND "createdAt" >= ${sixMonthsAgo}
       GROUP BY DATE_TRUNC('month', "createdAt")
       ORDER BY month ASC
     `;
 
     // Get row count by month for the current user
-    const rowsByMonth = await prisma.$queryRaw`
+    const rowsByMonth = await prisma.$queryRaw<RowsByMonth[]>`
       SELECT 
         DATE_TRUNC('month', u."createdAt") as month,
-        COUNT(r.id) as count
+        COUNT(r.id)::bigint as count
       FROM "CsvUpload" u
       LEFT JOIN "CsvRow" r ON u.id = r."uploadId"
-      WHERE u."userId" = ${userId}
+      WHERE u."userId" = ${user.id}
         AND u."createdAt" >= ${sixMonthsAgo}
       GROUP BY DATE_TRUNC('month', u."createdAt")
       ORDER BY month ASC
     `;
 
     // Get file size distribution
-    const fileSizeDistribution = await prisma.$queryRaw`
+    const fileSizeDistribution = await prisma.$queryRaw<FileSizeDistribution[]>`
       SELECT 
         CASE
           WHEN "fileSize" < 1024 * 1024 THEN 'Small (<1MB)'
           WHEN "fileSize" < 5 * 1024 * 1024 THEN 'Medium (1-5MB)'
           ELSE 'Large (>5MB)'
         END as size_category,
-        COUNT(*) as count
+        COUNT(*)::bigint as count
       FROM "CsvUpload"
-      WHERE "userId" = ${userId}
+      WHERE "userId" = ${user.id}
       GROUP BY size_category
     `;
 
     // Get upload status distribution
-    const statusDistribution = await prisma.$queryRaw`
+    const statusDistribution = await prisma.$queryRaw<StatusDistribution[]>`
       SELECT 
         status,
-        COUNT(*) as count
+        COUNT(*)::bigint as count
       FROM "CsvUpload"
-      WHERE "userId" = ${userId}
+      WHERE "userId" = ${user.id}
       GROUP BY status
     `;
 
     // Format the data for charts
-    const months = [];
+    const months: string[] = [];
     const currentDate = new Date(sixMonthsAgo);
 
     // Generate month labels for the last 6 months
@@ -76,7 +107,7 @@ export async function GET() {
 
     // Process uploads by month
     const uploadsData = Array(6).fill(0);
-    (uploadsByMonth as any[]).forEach((item: any) => {
+    uploadsByMonth.forEach((item) => {
       const month = new Date(item.month).toLocaleString('default', {
         month: 'short',
         year: '2-digit',
@@ -89,7 +120,7 @@ export async function GET() {
 
     // Process rows by month
     const rowsData = Array(6).fill(0);
-    (rowsByMonth as any[]).forEach((item: any) => {
+    rowsByMonth.forEach((item) => {
       const month = new Date(item.month).toLocaleString('default', {
         month: 'short',
         year: '2-digit',
@@ -100,66 +131,70 @@ export async function GET() {
       }
     });
 
-    // Process file size distribution
-    const fileSizeLabels = (fileSizeDistribution as any[]).map((item: any) => item.size_category);
-    const fileSizeData = (fileSizeDistribution as any[]).map((item: any) => Number(item.count));
+    // File size and status data are now processed directly in the chart data preparation
 
-    // Process status distribution
-    const statusLabels = (statusDistribution as any[]).map((item: any) => item.status);
-    const statusData = (statusDistribution as any[]).map((item: any) => Number(item.count));
+    const uploadsOverTime: ChartData = {
+      labels: months,
+      datasets: [
+        {
+          label: 'Uploads',
+          data: uploadsData,
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.5)',
+        },
+      ],
+    };
+
+    const rowsOverTime: ChartData = {
+      labels: months,
+      datasets: [
+        {
+          label: 'Rows Processed',
+          data: rowsData,
+          borderColor: 'rgb(16, 185, 129)',
+          backgroundColor: 'rgba(16, 185, 129, 0.5)',
+        },
+      ],
+    };
+
+    // Prepare file size distribution data
+    const fileSizeChartData = {
+      labels: fileSizeDistribution.map((item) => item.size_category),
+      datasets: [
+        {
+          label: 'Number of Files',
+          data: fileSizeDistribution.map((item) => Number(item.count)),
+          backgroundColor: [
+            'rgba(59, 130, 246, 0.7)',
+            'rgba(16, 185, 129, 0.7)',
+            'rgba(245, 158, 11, 0.7)',
+          ],
+        },
+      ],
+    };
+
+    // Prepare status distribution data
+    const statusChartData = {
+      labels: statusDistribution.map((item) => item.status),
+      datasets: [
+        {
+          label: 'Status',
+          data: statusDistribution.map((item) => Number(item.count)),
+          backgroundColor: [
+            'rgba(59, 130, 246, 0.7)',
+            'rgba(16, 185, 129, 0.7)',
+            'rgba(245, 158, 11, 0.7)',
+            'rgba(239, 68, 68, 0.7)',
+          ],
+        },
+      ],
+    };
 
     return NextResponse.json({
-      uploadsOverTime: {
-        labels: months,
-        datasets: [
-          {
-            label: 'Uploads',
-            data: uploadsData,
-            borderColor: 'rgb(59, 130, 246)',
-            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-          },
-        ],
-      },
-      rowsOverTime: {
-        labels: months,
-        datasets: [
-          {
-            label: 'Rows Processed',
-            data: rowsData,
-            borderColor: 'rgb(16, 185, 129)',
-            backgroundColor: 'rgba(16, 185, 129, 0.5)',
-          },
-        ],
-      },
-      fileSizeDistribution: {
-        labels: fileSizeLabels,
-        datasets: [
-          {
-            label: 'Number of Files',
-            data: fileSizeData,
-            backgroundColor: [
-              'rgba(59, 130, 246, 0.7)',
-              'rgba(16, 185, 129, 0.7)',
-              'rgba(245, 158, 11, 0.7)',
-            ],
-          },
-        ],
-      },
-      statusDistribution: {
-        labels: statusLabels,
-        datasets: [
-          {
-            label: 'Status',
-            data: statusData,
-            backgroundColor: [
-              'rgba(59, 130, 246, 0.7)',
-              'rgba(16, 185, 129, 0.7)',
-              'rgba(245, 158, 11, 0.7)',
-              'rgba(239, 68, 68, 0.7)',
-            ],
-          },
-        ],
-      },
+      uploadsOverTime,
+      rowsOverTime,
+      fileSizeDistribution: fileSizeChartData,
+      statusDistribution: statusChartData,
     });
   } catch (error) {
     console.error('Error fetching analytics data:', error);

@@ -19,33 +19,36 @@ const sampleData = [
 
 export default function AnalyticsDashboard() {
   // Use the custom hook for different chart data
-  const { chartData: revenueData } = useChartData({
+  const { chartData: revenueData } = useChartData<{ month: string; revenue: number }>({
     data: sampleData,
     xField: 'month',
     yField: 'revenue',
     label: 'Revenue',
+    type: 'line',
   });
 
-  const { chartData: usersData } = useChartData({
+  const { chartData: usersData } = useChartData<{ month: string; users: number }>({
     data: sampleData,
     xField: 'month',
     yField: 'users',
     label: 'Active Users',
+    type: 'line',
   });
 
-  const { chartData: churnData } = useChartData({
+  const { chartData: churnData } = useChartData<{ month: string; churn: number }>({
     data: sampleData,
     xField: 'month',
     yField: 'churn',
     label: 'Churn Rate',
+    type: 'bar',
   });
 
-  const { chartData: pieData } = useChartData({
+  const { chartData: pieData } = useChartData<{ month: string; revenue: number }>({
     data: sampleData.slice(0, 4), // Only show first 4 months for pie chart
     xField: 'month',
     yField: 'revenue',
     label: 'Revenue by Month',
-    type: 'pie',
+    type: 'doughnut',
   });
 
   return (
