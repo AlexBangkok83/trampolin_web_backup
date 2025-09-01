@@ -27,10 +27,15 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy standalone output from builder
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Install only production dependencies
+COPY --from=builder /app/package*.json ./
+RUN npm ci --only=production --legacy-peer-deps && npm cache clean --force
+
+# Copy all necessary files from builder
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=builder /app/prisma ./prisma
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
@@ -39,4 +44,4 @@ USER nextjs
 ENV NODE_ENV=production
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["npm", "start"]

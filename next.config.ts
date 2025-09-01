@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  // Remove standalone output to fix client reference manifest issues
 };
 
 export default nextConfig;
