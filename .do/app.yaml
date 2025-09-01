@@ -5,8 +5,7 @@ services:
       repo: BrightOnAnalytics/trampolin-web
       branch: main
       deploy_on_push: true
-    build_command: rm -rf .next && npx prisma migrate deploy && npm run build
-    run_command: npm start
+    dockerfile_path: Dockerfile
     envs:
       - key: NODE_ENV
         value: production

@@ -12,6 +12,9 @@ COPY . .
 # Next.js requires NEXT_TELEMETRY_DISABLED for CI builds
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Build the application
 RUN npm run build
 
@@ -24,11 +27,9 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/node_modules ./node_modules
 
-# Install production dependencies
-RUN npm install --production --legacy-peer-deps && npm cache clean --force;
-
-EXPOSE 3000
 ENV NODE_ENV=production
+EXPOSE 3000
 
 CMD ["npm", "start"]
