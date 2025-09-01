@@ -8,7 +8,8 @@ ARG DATABASE_URL
 
 # Install dependencies first (leverages Docker layer cache)
 COPY package*.json ./
-RUN npm install --omit=dev --legacy-peer-deps
+# RUN npm install --omit=dev --legacy-peer-deps
+RUN npm install --legacy-peer-deps
 
 # Copy source after deps to avoid busting cache on every change
 COPY . .
