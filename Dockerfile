@@ -1,5 +1,5 @@
 # --- Build Stage ---------------------------------------------------------
-FROM node:22-alpine AS builder
+FROM node:22.16.0-alpine AS builder
 
 # Define build-time arguments for secrets
 ARG STRIPE_SECRET_KEY
@@ -23,14 +23,14 @@ RUN npx prisma generate
 RUN npm run build
 
 # --- Production Stage ----------------------------------------------------
-FROM node:22-alpine AS runner
+FROM node:22.16.0-alpine AS runner
 WORKDIR /app
 
 # Copy only necessary files from builder
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/node_modules ./node_modules
 
 ENV NODE_ENV=production
