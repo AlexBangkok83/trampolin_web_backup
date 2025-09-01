@@ -4,9 +4,10 @@ import { getToken } from 'next-auth/jwt';
 const PUBLIC_FILE = /\.(.*)$/;
 
 export async function middleware(req: NextRequest) {
-  // Skip static files and Next.js internals
   const pathname = req.nextUrl.pathname;
-  if (pathname.startsWith('/api') || PUBLIC_FILE.test(pathname) || pathname.startsWith('/_next')) {
+
+  // Skip static files, Next.js internals, and API routes for static export
+  if (PUBLIC_FILE.test(pathname) || pathname.startsWith('/_next') || pathname.startsWith('/api')) {
     return NextResponse.next();
   }
 

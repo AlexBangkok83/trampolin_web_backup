@@ -5,24 +5,20 @@ static_sites:
       repo: BrightOnAnalytics/trampolin-web
       branch: main
       deploy_on_push: true
+    
+    # Build command for static export
     build_command: |
-      # Install dependencies
       npm ci
-      
-      # Build the application
       npm run build
       
-      # Create necessary directories
-      mkdir -p .next/static/_next
+      # Create output directory if it doesn't exist
+      mkdir -p out
       
-      # Move static files to the correct location
-      cp -r .next/static/* .next/static/_next/
-      
-      # Clean up
-      rm -rf .next/cache
+      # Copy static files
+      cp -r public/. out/
     
     # Output directory for static files
-    output_dir: .next/static
+    output_dir: out
     
     # Environment variables
     envs:
@@ -42,3 +38,8 @@ static_sites:
     health_check:
       http_path: /
       initial_delay_seconds: 30
+      
+    # Error pages (optional)
+    error_pages:
+      - code: 404
+        file: 404.html

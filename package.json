@@ -15,7 +15,9 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build && next export -o .next/static",
+    "build": "next build",
+    "export": "next export -o out",
+    "postbuild": "npm run export && cp -r public/. out/",
     "start": "npx serve@latest out -p $PORT",
     "seed": "npx ts-node prisma/seed.ts",
     "prepare": "husky install",
