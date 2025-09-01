@@ -16,6 +16,10 @@ COPY . .
 # Next.js requires NEXT_TELEMETRY_DISABLED for CI builds
 ENV NEXT_TELEMETRY_DISABLED=1
 
+ENV STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+ENV DATABASE_URL=${DATABASE_URL}
+ENV NODE_ENV=production
+
 # Generate Prisma Client
 RUN npx prisma generate
 
