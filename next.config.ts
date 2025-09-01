@@ -1,19 +1,14 @@
-import type { NextConfig } from 'next';
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Enable static export for DigitalOcean App Platform
+  output: 'export',
 
-const nextConfig: NextConfig = {
-  // Disable standalone mode to fix client reference manifest issues
-  output: undefined,
+  // Set custom output directory
+  distDir: '.next/static',
 
-  // Configure server components
-  serverExternalPackages: [],
-
-  experimental: {
-    // Enable server actions
-    serverActions: {
-      allowedOrigins: ['*'],
-    },
-    // Enable server components (not needed in latest Next.js as it's enabled by default)
-    // serverComponentsExternalPackages has been moved to root level
+  // Configure images for static export
+  images: {
+    unoptimized: true,
   },
 
   // Enable React Strict Mode

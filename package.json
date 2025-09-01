@@ -15,9 +15,9 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && next export -o .next/static",
+    "start": "npx serve@latest out -p $PORT",
     "seed": "npx ts-node prisma/seed.ts",
-    "start": "next start",
     "prepare": "husky install",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx src",
     "format": "prettier --write .",

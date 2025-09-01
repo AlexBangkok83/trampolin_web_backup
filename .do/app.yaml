@@ -1,43 +1,44 @@
 name: trampolin-web
-services:
+static_sites:
   - name: web
     github:
       repo: BrightOnAnalytics/trampolin-web
       branch: main
       deploy_on_push: true
     build_command: |
-      # Clean everything
-      rm -rf .next/
-      rm -rf node_modules/
-      rm -rf .cache/
-      
-      # Install all dependencies
+      # Install dependencies
       npm ci
       
-      # Build with production settings
-      NODE_ENV=production \
-      NEXT_TELEMETRY_DISABLED=1 \
-      next build --no-lint
+      # Build the application
+      npm run build
       
-      # Clean up development dependencies after build
-      npm prune --production
+      # Create necessary directories
+      mkdir -p .next/static/_next
       
-      # Clear Next.js cache and ensure proper permissions
-      rm -rf .next/cache/
-      chmod -R 755 .next
-    run_command: |
-      # Set Node.js options and environment variables
-      export NODE_OPTIONS='--max-old-space-size=1024'
-      export NODE_ENV=production
+      # Move static files to the correct location
+      cp -r .next/static/* .next/static/_next/
       
-      # Start the Next.js application
-      exec node node_modules/next/dist/bin/next start -p $PORT
+      # Clean up
+      rm -rf .next/cache
+    
+    # Output directory for static files
+    output_dir: .next/static
+    
+    # Environment variables
     envs:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
       - key: STRIPE_SECRET_KEY
         value: ${STRIPE_SECRET_KEY}
       - key: DATABASE_URL
         value: ${DATABASE_URL}
-      - key: NODE_ENV
-        value: production
+    
+    # HTTP settings
+    http_port: 8080
+    
+    # Health check
     health_check:
-      http_path: /api/health
+      http_path: /
+      initial_delay_seconds: 30
