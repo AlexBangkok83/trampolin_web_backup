@@ -5,7 +5,7 @@ services:
       repo: BrightOnAnalytics/trampolin-web
       branch: main
       deploy_on_push: true
-    build_command: NODE_ENV=production npm ci && npm run build
+    build_command: npm ci --production && npm run build
     run_command: npm start
     envs:
       - key: STRIPE_SECRET_KEY
