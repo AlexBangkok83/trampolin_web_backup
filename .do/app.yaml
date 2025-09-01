@@ -8,25 +8,30 @@ services:
     build_command: |
       # Clean everything
       rm -rf .next/
-      rm -rf node_modules/.cache/
+      rm -rf node_modules/
+      rm -rf .cache/
       
-      # Install only production dependencies first
-      npm ci --production=false
+      # Install all dependencies
+      npm ci
       
       # Build with production settings
       NODE_ENV=production \
       NEXT_TELEMETRY_DISABLED=1 \
       next build --no-lint
       
-      # Clean up development dependencies
+      # Clean up development dependencies after build
       npm prune --production
       
-      # Clear Next.js cache
+      # Clear Next.js cache and ensure proper permissions
       rm -rf .next/cache/
+      chmod -R 755 .next
     run_command: |
-      NODE_OPTIONS='--max-old-space-size=1024' \
-      NODE_ENV=production \
-      next start -p $PORT
+      # Set Node.js options and environment variables
+      export NODE_OPTIONS='--max-old-space-size=1024'
+      export NODE_ENV=production
+      
+      # Start the Next.js application
+      exec node node_modules/next/dist/bin/next start -p $PORT
     envs:
       - key: STRIPE_SECRET_KEY
         value: ${STRIPE_SECRET_KEY}

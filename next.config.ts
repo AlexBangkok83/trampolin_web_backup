@@ -4,15 +4,20 @@ const nextConfig: NextConfig = {
   // Disable standalone mode to fix client reference manifest issues
   output: undefined,
 
+  // Configure server components
+  serverExternalPackages: [],
+
   experimental: {
-    // Disable React Server Components
-    serverComponentsExternalPackages: [],
     // Enable server actions
-    serverActions: { allowedOrigins: ['*'] },
+    serverActions: {
+      allowedOrigins: ['*'],
+    },
+    // Enable server components (not needed in latest Next.js as it's enabled by default)
+    // serverComponentsExternalPackages has been moved to root level
   },
 
-  // Disable React Strict Mode for better compatibility
-  reactStrictMode: false,
+  // Enable React Strict Mode
+  reactStrictMode: true,
 
   // Enable SWC minification
   swcMinify: true,
