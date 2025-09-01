@@ -81,6 +81,124 @@ A production-ready [Next.js 14](https://nextjs.org) SaaS scaffold with **TypeScr
 
 Copy `.env.example` to `.env.local` and fill in values as you add features (database URLs, API keys, etc.). Next.js automatically loads `*.local` files.
 
+### Required Environment Variables
+
+For authentication and Stripe integration:
+
+```bash
+# NextAuth.js Configuration
+NEXTAUTH_SECRET="your-nextauth-secret-here"  # Generate with: openssl rand -base64 32
+NEXTAUTH_URL="http://localhost:3000"
+
+# Stripe Payment Integration
+STRIPE_SECRET_KEY="sk_test_..."              # Your Stripe secret key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..." # Your Stripe publishable key
+STRIPE_WEBHOOK_SECRET="whsec_..."            # Webhook endpoint secret from Stripe dashboard
+
+# Database
+DATABASE_URL="postgres://postgres:postgres@localhost:5432/trampolin"
+```
+
+See `STRIPE_SETUP.md` for detailed Stripe configuration instructions.
+
+---
+
+## 🧪 Testing Stripe Integration
+
+### Prerequisites for Testing
+
+1. **Install Stripe CLI**
+
+   ```bash
+   # macOS
+   brew install stripe/stripe-cli/stripe
+
+   # Or download from https://stripe.com/docs/stripe-cli
+   ```
+
+2. **Login to Stripe**
+   ```bash
+   stripe login
+   ```
+
+### Local Webhook Testing
+
+1. **Forward webhooks to your local development server**
+
+   ```bash
+   stripe listen --forward-to localhost:3000/api/webhooks/stripe
+   ```
+
+   This command will output a webhook signing secret (starts with `whsec_`). Add this to your `.env.local`:
+
+   ```bash
+   STRIPE_WEBHOOK_SECRET="whsec_1234567890abcdef..."
+   ```
+
+2. **Trigger test events** (in a separate terminal)
+
+   ```bash
+   # Test subscription creation
+   stripe trigger customer.subscription.created
+
+   # Test subscription update
+   stripe trigger customer.subscription.updated
+
+   # Test payment success
+   stripe trigger invoice.payment_succeeded
+
+   # Test payment failure
+   stripe trigger invoice.payment_failed
+   ```
+
+### Test Credit Cards
+
+Use these test card numbers in your application:
+
+| Card Number        | Description                         |
+| ------------------ | ----------------------------------- |
+| `4242424242424242` | Successful payment                  |
+| `4000000000000002` | Card declined                       |
+| `4000002500003155` | Requires authentication (3D Secure) |
+| `4000000000000069` | Expired card                        |
+
+### Testing Workflow
+
+1. **Start your development server**
+
+   ```bash
+   npm run dev
+   ```
+
+2. **Start webhook forwarding**
+
+   ```bash
+   stripe listen --forward-to localhost:3000/api/webhooks/stripe
+   ```
+
+3. **Test the subscription flow**
+   - Navigate to `/dashboard/subscription`
+   - Select a plan and subscribe
+   - Use test card `4242424242424242`
+   - Check webhook logs for events
+
+4. **Monitor webhook events**
+
+   ```bash
+   # View webhook logs
+   stripe logs tail
+
+   # View specific event
+   stripe events retrieve evt_1234567890
+   ```
+
+### Debugging Tips
+
+- Check your application logs for webhook processing
+- Verify webhook signature verification is working
+- Use Stripe Dashboard → Developers → Events to see all webhook deliveries
+- Test both successful and failed payment scenarios
+
 ---
 
 ## 🐳 Docker

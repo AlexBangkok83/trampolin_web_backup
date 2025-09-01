@@ -24,6 +24,7 @@ model User {
   emailVerified     DateTime?
   image             String?
   passwordHash      String?
+  stripeCustomerId  String?   @unique
 
   roleId            String?
   role              Role?     @relation(fields: [roleId], references: [id])
@@ -91,11 +92,14 @@ model VerificationToken {
 ///////////////////////////////
 
 enum SubscriptionStatus {
-  active
+  incomplete
+  incomplete_expired
   trialing
+  active
   past_due
   canceled
   unpaid
+  paused
 }
 
 model Subscription {

@@ -46,15 +46,20 @@ export function UserMenu() {
             </Menu.Item>
             <Menu.Item>
               {({ active }) => (
-                <Link
-                  href="/dashboard"
-                  className={classNames(
-                    active ? 'bg-gray-100' : '',
-                    'block px-4 py-2 text-sm text-gray-700',
-                  )}
-                >
-                  Dashboard
-                </Link>
+                <div>
+                  <Link
+                    href="/dashboard"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/dashboard/subscription"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Subscription
+                  </Link>
+                </div>
               )}
             </Menu.Item>
             <Menu.Item>
