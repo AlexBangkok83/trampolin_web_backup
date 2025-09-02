@@ -23,21 +23,26 @@ const MOCK_DATA = {
 };
 
 // Type definitions for query results
+// These interfaces are used for database query results and may be used in future implementations
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface UploadsByMonth {
   month: Date;
   count: bigint;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface RowsByMonth {
   month: Date;
   count: bigint;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface FileSizeDistribution {
   size_category: string;
   count: bigint;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface StatusDistribution {
   status: string;
   count: bigint;
