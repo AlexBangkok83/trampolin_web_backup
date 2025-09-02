@@ -6,10 +6,10 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
-import { 
-  LayoutDashboard, 
-  BarChart3, 
-  Clock, 
+import {
+  LayoutDashboard,
+  BarChart3,
+  Clock,
   BookmarkIcon,
   FileText,
   Users,
@@ -25,7 +25,7 @@ import {
   Settings,
   CreditCard,
   LogOut,
-  ChevronUp
+  ChevronUp,
 } from 'lucide-react';
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -74,9 +74,9 @@ function ThemeToggle({ collapsed }: { collapsed: boolean }) {
   if (!mounted) return null;
 
   const themes = [
-    { name: 'Light', value: 'light', icon: Sun },
-    { name: 'Dark', value: 'dark', icon: Moon },
-    { name: 'System', value: 'system', icon: Monitor },
+    { name: 'Light', value: 'light' as const, icon: Sun },
+    { name: 'Dark', value: 'dark' as const, icon: Moon },
+    { name: 'System', value: 'system' as const, icon: Monitor },
   ];
 
   return (
@@ -100,11 +100,17 @@ function ThemeToggle({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; onToggleCollapse: () => void }) {
+function SidebarContent({
+  collapsed,
+  onToggleCollapse,
+}: {
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+}) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
-    new Set(['ANALYTICS', 'TOOLS'])
+    new Set(['ANALYTICS', 'TOOLS']),
   );
   const [userDropdownOpen, setUserDropdownOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -133,13 +139,20 @@ function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; o
   };
 
   const userName = session?.user?.name || 'User';
-  const userInitials = userName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+  const userInitials =
+    userName
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase() || 'U';
 
   return (
-    <div className={cn(
-      'flex h-screen flex-col bg-white border-r border-gray-200 dark:bg-gray-800 dark:border-gray-700 transition-all duration-300',
-      collapsed ? 'w-16' : 'w-64'
-    )}>
+    <div
+      className={cn(
+        'flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300 dark:border-gray-700 dark:bg-gray-800',
+        collapsed ? 'w-16' : 'w-64',
+      )}
+    >
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
         {!collapsed ? (
@@ -172,7 +185,7 @@ function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; o
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-4">
         {navigation.map((item) => {
           if ('href' in item) {
             // Regular navigation item
@@ -186,15 +199,17 @@ function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; o
                     ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100',
                   'group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors',
-                  collapsed && 'justify-center'
+                  collapsed && 'justify-center',
                 )}
                 title={collapsed ? item.name : undefined}
               >
                 <item.icon
                   className={cn(
-                    isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300',
+                    isActive
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300',
                     'h-5 w-5 flex-shrink-0',
-                    !collapsed && 'mr-3'
+                    !collapsed && 'mr-3',
                   )}
                 />
                 {!collapsed && item.name}
@@ -208,18 +223,22 @@ function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; o
                 {!collapsed && (
                   <button
                     onClick={() => toggleSection(item.title)}
-                    className="flex w-full items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                    className="flex w-full items-center justify-between px-2 py-2 text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
                     <span>{item.title}</span>
-                    <ChevronDown className={cn('h-4 w-4 transition-transform', !isExpanded && '-rotate-90')} />
+                    <ChevronDown
+                      className={cn('h-4 w-4 transition-transform', !isExpanded && '-rotate-90')}
+                    />
                   </button>
                 )}
-                
+
                 {/* Section items */}
-                <div className={cn(
-                  'space-y-1',
-                  collapsed || (!collapsed && isExpanded) ? 'block' : 'hidden'
-                )}>
+                <div
+                  className={cn(
+                    'space-y-1',
+                    collapsed || (!collapsed && isExpanded) ? 'block' : 'hidden',
+                  )}
+                >
                   {item.items.map((subItem) => {
                     const isActive = pathname === subItem.href;
                     return (
@@ -231,15 +250,17 @@ function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; o
                             ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'
                             : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100',
                           'group flex items-center rounded-md px-2 py-2 text-sm font-medium transition-colors',
-                          collapsed ? 'justify-center' : 'ml-6'
+                          collapsed ? 'justify-center' : 'ml-6',
                         )}
                         title={collapsed ? subItem.name : undefined}
                       >
                         <subItem.icon
                           className={cn(
-                            isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300',
+                            isActive
+                              ? 'text-blue-600 dark:text-blue-400'
+                              : 'text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300',
                             'h-4 w-4 flex-shrink-0',
-                            !collapsed && 'mr-3'
+                            !collapsed && 'mr-3',
                           )}
                         />
                         {!collapsed && subItem.name}
@@ -261,12 +282,15 @@ function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; o
       )}
 
       {/* User Profile Footer */}
-      <div ref={dropdownRef} className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 relative">
+      <div
+        ref={dropdownRef}
+        className="relative flex-shrink-0 border-t border-gray-200 dark:border-gray-700"
+      >
         {collapsed ? (
           <div className="flex justify-center p-4">
             <button
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/30"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30"
             >
               <span className="text-sm font-medium">{userInitials[0]}</span>
             </button>
@@ -287,17 +311,21 @@ function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; o
                 {session?.user?.email}
               </p>
             </div>
-            <ChevronUp className={`h-4 w-4 text-gray-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+            <ChevronUp
+              className={`h-4 w-4 text-gray-400 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`}
+            />
           </button>
         )}
 
         {/* Dropdown Menu */}
         {userDropdownOpen && (
-          <div className={`absolute bottom-full mb-1 ${collapsed ? 'left-4' : 'left-0 right-0'} z-50 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800`}>
+          <div
+            className={`absolute bottom-full mb-1 ${collapsed ? 'left-4' : 'left-0 right-0'} z-50 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800`}
+          >
             <div className="p-2">
               <Link
                 href="/account"
-                className="flex items-center w-full rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                className="flex w-full items-center rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                 onClick={() => setUserDropdownOpen(false)}
               >
                 <Settings className="mr-3 h-4 w-4" />
@@ -305,7 +333,7 @@ function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; o
               </Link>
               <Link
                 href="/billing"
-                className="flex items-center w-full rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                className="flex w-full items-center rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
                 onClick={() => setUserDropdownOpen(false)}
               >
                 <CreditCard className="mr-3 h-4 w-4" />
@@ -316,7 +344,7 @@ function SidebarContent({ collapsed, onToggleCollapse }: { collapsed: boolean; o
                   setUserDropdownOpen(false);
                   signOut({ callbackUrl: '/' });
                 }}
-                className="flex items-center w-full rounded-md px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                className="flex w-full items-center rounded-md px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
               >
                 <LogOut className="mr-3 h-4 w-4" />
                 Sign Out
@@ -345,7 +373,7 @@ export function Sidebar({
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:flex-shrink-0 md:h-screen">
+      <div className="hidden md:flex md:h-screen md:flex-shrink-0">
         <SidebarContent collapsed={collapsed} onToggleCollapse={toggleCollapse} />
       </div>
 

@@ -15,9 +15,9 @@ export default function ThemeToggle() {
   if (!mounted) return null;
 
   const themes = [
-    { name: 'Light', value: 'light', icon: Sun },
-    { name: 'Dark', value: 'dark', icon: Moon },
-    { name: 'System', value: 'system', icon: Monitor },
+    { name: 'Light', value: 'light' as const, icon: Sun },
+    { name: 'Dark', value: 'dark' as const, icon: Moon },
+    { name: 'System', value: 'system' as const, icon: Monitor },
   ];
 
   return (
