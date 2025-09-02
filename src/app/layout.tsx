@@ -18,7 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Trampolin - Facebook Ads Analytics & CSV Analytics Platform',
-  description: 'Analyze Facebook ads reach data and CSV data visualization for better business insights',
+  description:
+    'Analyze Facebook ads reach data and CSV data visualization for better business insights',
 };
 
 export default async function RootLayout({

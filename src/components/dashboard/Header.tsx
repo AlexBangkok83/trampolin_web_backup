@@ -24,7 +24,7 @@ export function Header({ setSidebarOpen }: { setSidebarOpen: (open: boolean) => 
             <Input
               id="search"
               name="search"
-              className="block w-full rounded-md border border-gray-300 bg-white py-2 pr-3 pl-10 leading-5 placeholder-gray-500 focus:border-indigo-500 focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:outline-none sm:text-sm"
+              className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 leading-5 placeholder-gray-500 focus:border-indigo-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
               placeholder="Search"
               type="search"
             />
@@ -42,7 +42,7 @@ export function Header({ setSidebarOpen }: { setSidebarOpen: (open: boolean) => 
             <div>
               <button
                 type="button"
-                className="flex max-w-xs items-center rounded-full bg-white text-sm focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none"
+                className="flex max-w-xs items-center rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                 id="user-menu"
                 aria-expanded="false"
                 aria-haspopup="true"

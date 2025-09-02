@@ -325,7 +325,7 @@ export default function DashboardPage() {
   }, [refreshUserGrowth, refreshSales, refreshTraffic, refreshRevenue]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-50 p-4 dark:bg-gray-900 md:p-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>

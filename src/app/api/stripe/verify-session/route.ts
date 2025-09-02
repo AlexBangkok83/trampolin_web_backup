@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, SubscriptionStatus } from '@prisma/client';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-08-27.basil',
 });
 
 const prisma = new PrismaClient();
@@ -51,9 +51,14 @@ export async function GET(request: NextRequest) {
           },
           data: {
             stripeSubscriptionId: subscription.id,
-            status: subscription.status as string,
-            currentPeriodStart: new Date(subscription.current_period_start * 1000),
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            status: subscription.status as SubscriptionStatus,
+            currentPeriodStart: new Date(
+              (subscription as unknown as { current_period_start: number }).current_period_start *
+                1000,
+            ),
+            currentPeriodEnd: new Date(
+              (subscription as unknown as { current_period_end: number }).current_period_end * 1000,
+            ),
           },
         });
       }

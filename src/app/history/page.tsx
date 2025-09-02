@@ -25,11 +25,11 @@ export default function History() {
                     <input
                       type="text"
                       placeholder="Search by product URL or name..."
-                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400"
                     />
                   </div>
                   <div>
-                    <select className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400">
+                    <select className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400">
                       <option>All time</option>
                       <option>Last 7 days</option>
                       <option>Last 30 days</option>
@@ -37,7 +37,7 @@ export default function History() {
                     </select>
                   </div>
                   <div>
-                    <select className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400">
+                    <select className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400">
                       <option>All results</option>
                       <option>High reach (&gt;10K)</option>
                       <option>Medium reach (5K-10K)</option>
@@ -52,26 +52,26 @@ export default function History() {
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-300">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                         Product URL
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-300">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                         Reach
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-300">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                         Date Analyzed
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-300">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-300">
+                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
                     <tr>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             Wireless Earbuds Pro
@@ -81,7 +81,7 @@ export default function History() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div className="text-sm font-bold text-green-600 dark:text-green-400">
                           15.2K
                         </div>
@@ -89,15 +89,15 @@ export default function History() {
                           High performer
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900 dark:text-gray-200">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
                         2 hours ago
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
                           Saved
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
                           <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                             View
@@ -110,7 +110,7 @@ export default function History() {
                     </tr>
 
                     <tr>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             Smart Fitness Watch
@@ -120,7 +120,7 @@ export default function History() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div className="text-sm font-bold text-green-600 dark:text-green-400">
                           23.5K
                         </div>
@@ -128,15 +128,15 @@ export default function History() {
                           High performer
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900 dark:text-gray-200">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
                         1 day ago
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
                           Saved
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
                           <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                             View
@@ -149,7 +149,7 @@ export default function History() {
                     </tr>
 
                     <tr>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             Gaming Keyboard RGB
@@ -159,21 +159,21 @@ export default function History() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div className="text-sm font-bold text-orange-600 dark:text-orange-400">
                           7.8K
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">Medium reach</div>
                       </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900 dark:text-gray-200">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
                         2 days ago
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                           Analyzed
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
                           <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                             View
@@ -189,7 +189,7 @@ export default function History() {
                     </tr>
 
                     <tr>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             Bluetooth Speaker
@@ -199,19 +199,19 @@ export default function History() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div className="text-sm font-bold text-red-600 dark:text-red-400">2.1K</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">Low reach</div>
                       </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900 dark:text-gray-200">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
                         3 days ago
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                           Analyzed
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
                           <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                             View
@@ -224,7 +224,7 @@ export default function History() {
                     </tr>
 
                     <tr>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             Premium Coffee Maker
@@ -234,7 +234,7 @@ export default function History() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div className="text-sm font-bold text-green-600 dark:text-green-400">
                           18.9K
                         </div>
@@ -242,15 +242,15 @@ export default function History() {
                           High performer
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm whitespace-nowrap text-gray-900 dark:text-gray-200">
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
                         1 week ago
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4">
                         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                           Analyzed
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium whitespace-nowrap">
+                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
                           <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                             View

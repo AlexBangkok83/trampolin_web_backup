@@ -23,7 +23,7 @@ function SidebarContent() {
   const pathname = usePathname();
   return (
     <div className="flex h-0 flex-1 flex-col border-r border-gray-200 bg-white">
-      <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
+      <div className="flex flex-1 flex-col overflow-y-auto pb-4 pt-5">
         <div className="flex flex-shrink-0 items-center px-4">
           <h1 className="text-xl font-bold text-indigo-600">Trampolin</h1>
         </div>
@@ -90,17 +90,17 @@ export function Sidebar({
       <Dialog open={sidebarOpen} onClose={setSidebarOpen} className="relative z-40 md:hidden">
         <DialogBackdrop
           transition
-          className="bg-opacity-75 fixed inset-0 bg-gray-600 transition-opacity duration-300 ease-linear data-[closed]:opacity-0"
+          className="fixed inset-0 bg-gray-600 bg-opacity-75 transition-opacity duration-300 ease-linear data-[closed]:opacity-0"
         />
         <div className="fixed inset-0 z-40 flex">
           <DialogPanel
             transition
-            className="relative flex w-full max-w-xs flex-1 flex-col bg-white pt-5 pb-4 transition duration-300 ease-in-out data-[closed]:-translate-x-full"
+            className="relative flex w-full max-w-xs flex-1 flex-col bg-white pb-4 pt-5 transition duration-300 ease-in-out data-[closed]:-translate-x-full"
           >
-            <div className="absolute top-0 right-0 -mr-12 pt-2">
+            <div className="absolute right-0 top-0 -mr-12 pt-2">
               <button
                 type="button"
-                className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:ring-2 focus:ring-white focus:outline-none focus:ring-inset"
+                className="ml-1 flex h-10 w-10 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
                 onClick={() => setSidebarOpen(false)}
               >
                 <span className="sr-only">Close sidebar</span>

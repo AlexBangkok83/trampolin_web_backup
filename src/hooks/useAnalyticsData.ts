@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useSession } from 'next-auth/react';
 
 interface AnalyticsData {
   uploadsOverTime: {
@@ -39,20 +39,24 @@ interface AnalyticsData {
 }
 
 export function useAnalyticsData() {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchAnalyticsData = useCallback(async () => {
+    if (!session) {
+      setError(new Error('Not authenticated'));
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const token = await getToken();
 
       const response = await fetch('/api/analytics', {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
       });
 
@@ -68,7 +72,7 @@ export function useAnalyticsData() {
     } finally {
       setLoading(false);
     }
-  }, [getToken]);
+  }, [session]);
 
   useEffect(() => {
     fetchAnalyticsData();

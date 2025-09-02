@@ -81,7 +81,7 @@ export default function SubscriptionCard({
         <p className="mb-4 text-gray-600">You don&apos;t have an active subscription.</p>
         <button
           onClick={onUpdate}
-          className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Subscribe Now
         </button>
@@ -128,7 +128,7 @@ export default function SubscriptionCard({
           <button
             onClick={handleCancelSubscription}
             disabled={isLoading}
-            className="rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none disabled:opacity-50"
+            className="rounded-md bg-red-600 px-4 py-2 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
           >
             {isLoading ? 'Canceling...' : 'Cancel Subscription'}
           </button>
@@ -136,7 +136,7 @@ export default function SubscriptionCard({
 
         <button
           onClick={onUpdate}
-          className="rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:outline-none"
+          className="rounded-md bg-gray-600 px-4 py-2 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
         >
           Manage Plan
         </button>

@@ -40,7 +40,7 @@ export default function Footer() {
 
           {/* Product */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-900 uppercase dark:text-white">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-900 dark:text-white">
               Product
             </h3>
             <ul className="space-y-3">
@@ -89,7 +89,7 @@ export default function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-900 uppercase dark:text-white">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-900 dark:text-white">
               Support
             </h3>
             <ul className="space-y-3">
@@ -138,7 +138,7 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold tracking-wide text-gray-900 uppercase dark:text-white">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-900 dark:text-white">
               Legal
             </h3>
             <ul className="space-y-3">

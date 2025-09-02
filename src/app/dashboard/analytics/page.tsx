@@ -75,29 +75,29 @@ export default function AnalyticsDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <span className="text-muted-foreground h-4 w-4">💰</span>
+                <span className="h-4 w-4 text-muted-foreground">💰</span>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   ${sampleData.reduce((sum, item) => sum + item.revenue, 0).toLocaleString()}
                 </div>
-                <p className="text-muted-foreground text-xs">+20.1% from last month</p>
+                <p className="text-xs text-muted-foreground">+20.1% from last month</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <span className="text-muted-foreground h-4 w-4">👥</span>
+                <span className="h-4 w-4 text-muted-foreground">👥</span>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{sampleData[sampleData.length - 1].users}</div>
-                <p className="text-muted-foreground text-xs">+180.1% from last month</p>
+                <p className="text-xs text-muted-foreground">+180.1% from last month</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Avg. Churn</CardTitle>
-                <span className="text-muted-foreground h-4 w-4">📉</span>
+                <span className="h-4 w-4 text-muted-foreground">📉</span>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -106,17 +106,17 @@ export default function AnalyticsDashboard() {
                   ).toFixed(1)}
                   %
                 </div>
-                <p className="text-muted-foreground text-xs">+12% from last month</p>
+                <p className="text-xs text-muted-foreground">+12% from last month</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Now</CardTitle>
-                <span className="text-muted-foreground h-4 w-4">🔥</span>
+                <span className="h-4 w-4 text-muted-foreground">🔥</span>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">+573</div>
-                <p className="text-muted-foreground text-xs">+201 since last hour</p>
+                <p className="text-xs text-muted-foreground">+201 since last hour</p>
               </CardContent>
             </Card>
           </div>

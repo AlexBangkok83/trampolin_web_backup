@@ -114,7 +114,7 @@ export default function SubscriptionStatus({ onSubscriptionChange }: Subscriptio
         </div>
         <button
           onClick={fetchSubscription}
-          className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Retry
         </button>

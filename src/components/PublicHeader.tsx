@@ -95,7 +95,7 @@ export default function PublicHeader() {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden">
-            <div className="space-y-1 border-t border-gray-200 px-2 pt-2 pb-3 dark:border-gray-700">
+            <div className="space-y-1 border-t border-gray-200 px-2 pb-3 pt-2 dark:border-gray-700">
               <Link
                 href="/features"
                 className="block px-3 py-2 text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"

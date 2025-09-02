@@ -133,7 +133,7 @@ export default function SubscriptionPage() {
                 <p className="mb-4 text-sm text-gray-600">
                   Need help with your subscription? Our support team is here to help.
                 </p>
-                <button className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                <button className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                   Contact Support
                 </button>
               </div>

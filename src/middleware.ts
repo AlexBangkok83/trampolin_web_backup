@@ -44,7 +44,7 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
     }
-    
+
     // Admin-only routes check
     if (pathname.startsWith('/dashboard/admin')) {
       const role = (token as { role?: string })?.role;
@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.rewrite(notAllowed);
       }
     }
-    
+
     return NextResponse.next();
   }
 
@@ -83,7 +83,7 @@ export async function middleware(request: NextRequest) {
       dashboardUrl.pathname = '/dashboard';
       return NextResponse.redirect(dashboardUrl);
     }
-    
+
     // Admin-only routes check
     if (pathname.startsWith('/dashboard/admin')) {
       const role = (token as { role?: string })?.role;
@@ -93,7 +93,6 @@ export async function middleware(request: NextRequest) {
         return NextResponse.rewrite(notAllowed);
       }
     }
-    
   } else if (subdomain === 'insights' || !subdomain.includes('trampolin')) {
     // insights.trampolin.ai - Marketing site
 

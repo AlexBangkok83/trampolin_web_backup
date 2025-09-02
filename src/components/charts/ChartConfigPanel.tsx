@@ -94,7 +94,7 @@ export function ChartConfigPanel() {
                 </div>
                 {animation && (
                   <div className="mt-2">
-                    <Label className="text-muted-foreground text-xs">
+                    <Label className="text-xs text-muted-foreground">
                       Animation Duration: {animationDuration}ms
                     </Label>
                     <Slider
@@ -122,7 +122,7 @@ export function ChartConfigPanel() {
                 </div>
                 {showLegend && (
                   <div>
-                    <Label htmlFor="legendPosition" className="text-muted-foreground text-xs">
+                    <Label htmlFor="legendPosition" className="text-xs text-muted-foreground">
                       Legend Position
                     </Label>
                     <Select

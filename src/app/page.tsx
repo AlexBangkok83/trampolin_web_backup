@@ -17,14 +17,15 @@ export default function HomePage() {
       <PublicHeader />
 
       {/* Hero Section */}
-      <section className="px-4 pt-16 pb-20 sm:px-6 lg:px-8">
+      <section className="px-4 pb-20 pt-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl text-center">
-          <h1 className="mb-6 text-4xl font-bold text-gray-900 sm:text-6xl dark:text-white">
+          <h1 className="mb-6 text-4xl font-bold text-gray-900 dark:text-white sm:text-6xl">
             Trampolin Analytics Platform
             <span className="block text-blue-600 dark:text-blue-400">Facebook Ads & CSV Data</span>
           </h1>
           <p className="mx-auto mb-10 max-w-3xl text-xl text-gray-600 dark:text-gray-300">
-            Analyze Facebook advertising reach data and upload CSV files for comprehensive data visualization and insights.
+            Analyze Facebook advertising reach data and upload CSV files for comprehensive data
+            visualization and insights.
           </p>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <a
@@ -76,7 +77,8 @@ export default function HomePage() {
                 Facebook Ads Intelligence
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Get Facebook ad reach data in seconds. Analyze competitor performance and discover winning products.
+                Get Facebook ad reach data in seconds. Analyze competitor performance and discover
+                winning products.
               </p>
             </div>
 
@@ -100,7 +102,8 @@ export default function HomePage() {
                 CSV Data Analytics
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Upload CSV files and visualize your data with interactive charts and comprehensive analytics.
+                Upload CSV files and visualize your data with interactive charts and comprehensive
+                analytics.
               </p>
             </div>
 
@@ -124,7 +127,8 @@ export default function HomePage() {
                 Export & Share
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Save insights, export reports, and share findings with your team for collaborative analysis.
+                Save insights, export reports, and share findings with your team for collaborative
+                analysis.
               </p>
             </div>
           </div>
@@ -162,7 +166,8 @@ export default function HomePage() {
                 Get Instant Insights
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Our platform processes your data and generates comprehensive analytics with visualizations.
+                Our platform processes your data and generates comprehensive analytics with
+                visualizations.
               </p>
             </div>
 
@@ -184,9 +189,7 @@ export default function HomePage() {
       {/* CTA Section */}
       <section className="bg-blue-600 py-20 dark:bg-blue-700">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="mb-4 text-3xl font-bold text-white">
-            Ready to Start Analyzing?
-          </h2>
+          <h2 className="mb-4 text-3xl font-bold text-white">Ready to Start Analyzing?</h2>
           <p className="mb-8 text-xl text-blue-100">
             Join hundreds of marketers and analysts who use Trampolin for data-driven insights.
           </p>
@@ -206,7 +209,8 @@ export default function HomePage() {
             <div>
               <h3 className="mb-4 text-xl font-bold">Trampolin</h3>
               <p className="text-gray-400">
-                Comprehensive analytics platform for Facebook ads intelligence and CSV data visualization.
+                Comprehensive analytics platform for Facebook ads intelligence and CSV data
+                visualization.
               </p>
             </div>
             <div>

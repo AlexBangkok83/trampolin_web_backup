@@ -111,7 +111,7 @@ export default function SubscriptionPlans({
               )}
 
               <div className="p-6">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">{plan.name}</h3>
+                <h3 className="text-lg font-medium leading-6 text-gray-900">{plan.name}</h3>
                 <p className="mt-4 text-sm text-gray-500">
                   Perfect for {plan.name.toLowerCase()} users
                 </p>
@@ -125,7 +125,7 @@ export default function SubscriptionPlans({
                     currentPriceId ? handleUpdateSubscription(plan.id) : handleSubscribe(plan.id)
                   }
                   disabled={isLoading === plan.id || currentPriceId === plan.id}
-                  className={`mt-8 block w-full rounded-md border border-transparent py-2 text-center text-sm font-semibold focus:ring-2 focus:ring-offset-2 focus:outline-none ${
+                  className={`mt-8 block w-full rounded-md border border-transparent py-2 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                     currentPriceId === plan.id
                       ? 'cursor-not-allowed bg-gray-100 text-gray-500'
                       : plan.popular
@@ -143,8 +143,8 @@ export default function SubscriptionPlans({
                 </button>
               </div>
 
-              <div className="px-6 pt-6 pb-8">
-                <h4 className="text-sm font-medium tracking-wide text-gray-900 uppercase">
+              <div className="px-6 pb-8 pt-6">
+                <h4 className="text-sm font-medium uppercase tracking-wide text-gray-900">
                   What&apos;s included
                 </h4>
                 <ul className="mt-6 space-y-4">

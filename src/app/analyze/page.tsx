@@ -43,8 +43,8 @@ export default function Analyze() {
         const data = await response.json();
         setSubscription(data);
       }
-    } catch (error) {
-      console.error('Failed to fetch subscription:', error);
+    } catch (_error) {
+      console.error('Failed to fetch subscription:', _error);
     } finally {
       setLoading(false);
     }
@@ -103,7 +103,7 @@ export default function Analyze() {
         const error = await response.json();
         setError(error.message || 'Analysis failed');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to analyze URLs. Please try again.');
     } finally {
       setIsAnalyzing(false);
@@ -296,23 +296,23 @@ export default function Analyze() {
                   <div className="space-y-3">
                     {results.map((result, index) => (
                       <div
-                        key={result.id || index}
+                        key={(result as { id?: string }).id || index}
                         className="flex items-center justify-between rounded-lg border border-gray-200 p-4 dark:border-gray-600"
                       >
                         <div className="flex-1">
                           <div className="mb-1 text-sm font-medium text-gray-900 dark:text-white">
-                            {result.url}
+                            {(result as { url?: string }).url}
                           </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
                             Status:{' '}
                             <span className="font-medium text-green-600 dark:text-green-400">
-                              {result.status}
+                              {(result as { status?: string }).status}
                             </span>
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                            {result.url?.length || 0} chars
+                            {(result as { url?: string }).url?.length || 0} chars
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             Character count
