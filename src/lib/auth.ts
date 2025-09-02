@@ -51,6 +51,18 @@ export const authOptions: AuthOptions = {
       return session;
     },
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        domain: process.env.NODE_ENV === 'production' ? '.trampolin.ai' : undefined, // Subdomain cookies in prod only
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
 };
 
 // Export NextAuth handler for testing convenience (importing directly in route).

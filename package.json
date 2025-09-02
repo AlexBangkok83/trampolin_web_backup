@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:main": "PORT=3001 next dev",
+    "dev:app": "PORT=3002 next dev",
     "build": "next build",
     "seed": "npx ts-node prisma/seed.ts",
     "start": "next start",
@@ -13,11 +15,13 @@
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",
+    "@stripe/stripe-js": "^7.9.0",
     "bcrypt": "^6.0.0",
     "next": "15.5.2",
     "next-auth": "^4.24.11",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "stripe": "^18.5.0",
     "zod": "^3.23.8"
   },
   "lint-staged": {

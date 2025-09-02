@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -32,6 +32,7 @@ model User {
   sessions          Session[]
   subscriptions     Subscription[]
   csvUploads        CsvUpload[]
+  urlAnalyses       UrlAnalysis[]
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
@@ -56,12 +57,12 @@ model Account {
   type               String
   provider           String
   providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
+  refresh_token      String?
+  access_token       String?
   expires_at         Int?
   token_type         String?
   scope              String?
-  id_token           String?  @db.Text
+  id_token           String?
   session_state      String?
 
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -102,7 +103,7 @@ model Subscription {
   id                   String              @id @default(cuid())
   userId               String
   stripeCustomerId     String              @unique
-  stripeSubscriptionId String              @unique
+  stripeSubscriptionId String?             @unique
   status               SubscriptionStatus
   priceId              String
   quantity             Int                 @default(1)
@@ -110,6 +111,15 @@ model Subscription {
   currentPeriodEnd     DateTime
   cancelAtPeriodEnd    Boolean             @default(false)
   canceledAt           DateTime?
+  
+  // Usage tracking
+  monthlyLimit         Int                 @default(500)  // URLs allowed per month
+  usedThisMonth        Int                 @default(0)     // URLs used in current period
+  lastUsageReset       DateTime            @default(now()) // When usage was last reset
+  
+  // Trial usage tracking
+  trialLimit           Int                 @default(10)    // URLs allowed during trial
+  trialUsed            Int                 @default(0)     // URLs used during trial
 
   user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -118,7 +128,24 @@ model Subscription {
 }
 
 ///////////////////////////////
-// CSV Upload placeholder
+// URL Analysis Tracking
+///////////////////////////////
+
+model UrlAnalysis {
+  id          String   @id @default(cuid())
+  userId      String
+  url         String   
+  status      String   // "pending", "processing", "completed", "failed"
+  results     Json?    // Store analysis results
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+///////////////////////////////
+// CSV Upload placeholder  
 ///////////////////////////////
 
 model CsvUpload {
