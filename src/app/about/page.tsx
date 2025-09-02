@@ -7,13 +7,13 @@ export default function About() {
       <PublicHeader />
 
       {/* Hero Section */}
-      <section className="px-4 pt-16 pb-12 sm:px-6 lg:px-8">
+      <section className="px-4 pb-12 pt-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <h1 className="mb-6 text-4xl font-bold text-gray-900 sm:text-5xl dark:text-white">
+          <h1 className="mb-6 text-4xl font-bold text-gray-900 dark:text-white sm:text-5xl">
             About Trampolin
           </h1>
           <p className="mb-8 text-xl text-gray-600 dark:text-gray-300">
-            We're on a mission to democratize competitive intelligence for marketers and
+            We&apos;re on a mission to democratize competitive intelligence for marketers and
             entrepreneurs worldwide.
           </p>
         </div>
@@ -37,7 +37,7 @@ export default function About() {
             <h2 className="mb-6 text-3xl font-bold text-gray-900 dark:text-white">What We Do</h2>
             <p className="mb-6 text-lg text-gray-600 dark:text-gray-300">
               Trampolin analyzes Facebook ad performance data for any product URL you provide. By
-              leveraging Facebook's Ad Library API and our proprietary analysis algorithms, we
+              leveraging Facebook&apos;s Ad Library API and our proprietary analysis algorithms, we
               deliver instant insights into:
             </p>
             <ul className="mb-8 list-disc space-y-2 pl-6 text-lg text-gray-600 dark:text-gray-300">
@@ -57,7 +57,7 @@ export default function About() {
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
                   Get comprehensive analysis in seconds, not hours. Our data comes directly from
-                  Facebook's official sources.
+                  Facebook&apos;s official sources.
                 </p>
               </div>
               <div>

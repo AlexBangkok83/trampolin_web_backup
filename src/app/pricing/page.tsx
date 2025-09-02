@@ -7,9 +7,9 @@ export default function Pricing() {
       <PublicHeader />
 
       {/* Hero Section */}
-      <section className="px-4 pt-16 pb-12 sm:px-6 lg:px-8">
+      <section className="px-4 pb-12 pt-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <h1 className="mb-6 text-4xl font-bold text-gray-900 sm:text-5xl dark:text-white">
+          <h1 className="mb-6 text-4xl font-bold text-gray-900 dark:text-white sm:text-5xl">
             Simple, Transparent Pricing
           </h1>
           <p className="mb-8 text-xl text-gray-600 dark:text-gray-300">
@@ -38,7 +38,7 @@ export default function Pricing() {
               <ul className="mb-8 space-y-4">
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -54,7 +54,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -68,7 +68,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -84,7 +84,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -98,7 +98,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -112,7 +112,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -156,7 +156,7 @@ export default function Pricing() {
               <ul className="mb-8 space-y-4">
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -172,7 +172,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -186,7 +186,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -200,7 +200,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -216,7 +216,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -230,7 +230,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -268,7 +268,7 @@ export default function Pricing() {
               <ul className="mb-8 space-y-4">
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -284,7 +284,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -298,7 +298,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -312,7 +312,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -328,7 +328,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -344,7 +344,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -358,7 +358,7 @@ export default function Pricing() {
                 </li>
                 <li className="flex items-start">
                   <svg
-                    className="mt-0.5 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                    className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-green-500"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -402,8 +402,8 @@ export default function Pricing() {
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
                 If you reach your monthly URL analysis limit, you can upgrade to a higher plan or
-                wait until the next billing cycle. We'll notify you when you're approaching your
-                limit.
+                wait until the next billing cycle. We&apos;ll notify you when you&apos;re
+                approaching your limit.
               </p>
             </div>
 
@@ -432,8 +432,8 @@ export default function Pricing() {
                 How accurate is the Facebook ad reach data?
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Our data comes directly from Facebook's Ads Library API, ensuring high accuracy. We
-                update our analysis methods regularly to maintain precision.
+                Our data comes directly from Facebook&apos;s Ads Library API, ensuring high
+                accuracy. We update our analysis methods regularly to maintain precision.
               </p>
             </div>
           </div>

@@ -7,9 +7,9 @@ export default function Features() {
       <PublicHeader />
 
       {/* Hero Section */}
-      <section className="px-4 pt-16 pb-12 sm:px-6 lg:px-8">
+      <section className="px-4 pb-12 pt-16 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <h1 className="mb-6 text-4xl font-bold text-gray-900 sm:text-5xl dark:text-white">
+          <h1 className="mb-6 text-4xl font-bold text-gray-900 dark:text-white sm:text-5xl">
             Powerful Features for
             <span className="block text-blue-600 dark:text-blue-400">Facebook Ad Analysis</span>
           </h1>
@@ -32,13 +32,13 @@ export default function Features() {
                 </h2>
                 <p className="mb-6 text-lg text-gray-600 dark:text-gray-300">
                   Simply paste any product URL from e-commerce sites and get comprehensive Facebook
-                  ad reach analysis in seconds. Our advanced algorithm scans Facebook's Ad Library
-                  to provide you with accurate performance metrics.
+                  ad reach analysis in seconds. Our advanced algorithm scans Facebook&apos;s Ad
+                  Library to provide you with accurate performance metrics.
                 </p>
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-green-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -54,7 +54,7 @@ export default function Features() {
                   </li>
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-green-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -70,7 +70,7 @@ export default function Features() {
                   </li>
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-green-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -132,7 +132,7 @@ export default function Features() {
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-blue-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-blue-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -148,7 +148,7 @@ export default function Features() {
                   </li>
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-blue-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-blue-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -164,7 +164,7 @@ export default function Features() {
                   </li>
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-blue-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-blue-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -180,7 +180,7 @@ export default function Features() {
                   </li>
                 </ul>
               </div>
-              <div className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 p-8 lg:order-1 dark:from-blue-900/20 dark:to-blue-800/20">
+              <div className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 p-8 dark:from-blue-900/20 dark:to-blue-800/20 lg:order-1">
                 <div className="overflow-hidden rounded-lg bg-white shadow-lg dark:bg-gray-700">
                   <div className="border-b border-gray-200 bg-gray-50 px-4 py-2 dark:border-gray-600 dark:bg-gray-800">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -238,7 +238,7 @@ export default function Features() {
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-purple-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-purple-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -254,7 +254,7 @@ export default function Features() {
                   </li>
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-purple-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-purple-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -270,7 +270,7 @@ export default function Features() {
                   </li>
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-purple-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-purple-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -324,7 +324,7 @@ export default function Features() {
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-green-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -340,7 +340,7 @@ export default function Features() {
                   </li>
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-green-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -356,7 +356,7 @@ export default function Features() {
                   </li>
                   <li className="flex items-start">
                     <svg
-                      className="mt-1 mr-3 h-5 w-5 flex-shrink-0 text-green-500"
+                      className="mr-3 mt-1 h-5 w-5 flex-shrink-0 text-green-500"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -372,7 +372,7 @@ export default function Features() {
                   </li>
                 </ul>
               </div>
-              <div className="rounded-lg bg-gradient-to-br from-green-50 to-green-100 p-8 lg:order-1 dark:from-green-900/20 dark:to-green-800/20">
+              <div className="rounded-lg bg-gradient-to-br from-green-50 to-green-100 p-8 dark:from-green-900/20 dark:to-green-800/20 lg:order-1">
                 <div className="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-700">
                   <div className="mb-4 flex items-center justify-between">
                     <h3 className="font-semibold text-gray-900 dark:text-white">Saved Products</h3>

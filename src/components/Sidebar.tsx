@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import ThemeToggle from './ThemeToggle';
-import { getMainSiteUrl } from '../lib/subdomain';
 
 interface SidebarProps {
   currentPage?: string;
@@ -133,7 +132,7 @@ export default function Sidebar({ currentPage = '' }: SidebarProps) {
         {/* Analytics Section */}
         <div>
           {!isCollapsed && (
-            <div className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
               ANALYTICS
             </div>
           )}
@@ -206,7 +205,7 @@ export default function Sidebar({ currentPage = '' }: SidebarProps) {
         {/* Tools Section */}
         <div>
           {!isCollapsed && (
-            <div className="mb-3 text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
               TOOLS
             </div>
           )}
@@ -335,7 +334,7 @@ export default function Sidebar({ currentPage = '' }: SidebarProps) {
         </button>
 
         {userMenuOpen && !isCollapsed && (
-          <div className="absolute right-4 bottom-full left-4 mb-2 rounded-lg border border-gray-200 bg-white py-2 shadow-lg dark:border-gray-600 dark:bg-gray-700">
+          <div className="absolute bottom-full left-4 right-4 mb-2 rounded-lg border border-gray-200 bg-white py-2 shadow-lg dark:border-gray-600 dark:bg-gray-700">
             <a
               href="/account"
               className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-600"

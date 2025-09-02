@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
 
     let avgReach = 0;
     if (analysesWithResults.length > 0) {
-      const totalReach = analysesWithResults.reduce((sum, analysis) => {
+      const totalReach = analysesWithResults.reduce((sum, _analysis) => {
         // Mock reach calculation since we don't have real reach data yet
         return sum + (Math.floor(Math.random() * 25000) + 5000);
       }, 0);

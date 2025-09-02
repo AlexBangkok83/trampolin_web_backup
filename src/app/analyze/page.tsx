@@ -26,7 +26,7 @@ export default function Analyze() {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [success, setSuccess] = useState<string | null>(null);
 
   // Fetch user subscription data
@@ -165,7 +165,7 @@ export default function Analyze() {
                     value={urls}
                     onChange={(e) => setUrls(e.target.value)}
                     disabled={isAnalyzing}
-                    className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400 dark:disabled:bg-gray-800"
+                    className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400 dark:disabled:bg-gray-800"
                     placeholder="Enter one or more product URLs (one per line)&#10;&#10;Examples:&#10;https://shopify.store/products/wireless-earbuds&#10;https://klipiq.se/products/smart-watch&#10;https://example.com/products/fitness-tracker"
                   />
                   <div className="mt-2 flex items-center justify-between text-sm">
@@ -220,7 +220,7 @@ export default function Analyze() {
                   <button
                     type="submit"
                     disabled={isAnalyzing || !urls.trim() || urlCount > remaining || !subscription}
-                    className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-400 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-offset-gray-800 dark:disabled:bg-gray-600"
+                    className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-offset-gray-800 dark:disabled:bg-gray-600"
                   >
                     {isAnalyzing ? 'Analyzing...' : 'Analyze URLs'}
                   </button>

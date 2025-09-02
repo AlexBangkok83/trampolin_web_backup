@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
           },
           data: {
             stripeSubscriptionId: subscription.id,
-            status: subscription.status as any,
+            status: subscription.status as string,
             currentPeriodStart: new Date(subscription.current_period_start * 1000),
             currentPeriodEnd: new Date(subscription.current_period_end * 1000),
           },

@@ -9,7 +9,7 @@ export default function Welcome() {
   const searchParams = useSearchParams();
   const sessionId = searchParams?.get('session_id');
   const [loading, setLoading] = useState(!!sessionId);
-  const [session, setSession] = useState<any>(null);
+  const [, setSession] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

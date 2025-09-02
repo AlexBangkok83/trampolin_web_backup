@@ -3,11 +3,11 @@
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function ThemeToggle() {
-  const { theme, setTheme, isDark } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="flex items-center space-x-2 px-4 py-2">
-      <div className="text-xs font-semibold tracking-wide text-gray-400 uppercase dark:text-gray-500">
+      <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
         Theme
       </div>
       <div className="flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800">

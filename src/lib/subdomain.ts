@@ -10,7 +10,6 @@ export function getAppUrl(path: string = '/'): string {
 
   // Client-side: determine the correct URL based on environment
   const currentHostname = window.location.hostname;
-  const currentPort = window.location.port;
 
   // Development environment
   if (currentHostname === 'localhost' || currentHostname.includes('127.0.0.1')) {
