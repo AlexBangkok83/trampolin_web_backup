@@ -9,6 +9,10 @@ import { JWT } from 'next-auth/jwt';
 // For now we expose a minimal JWT-only configuration so that the API route exists
 // without throwing errors. Subtask 3.2 will inject the Prisma adapter + email/password.
 
+/**
+ * Configuration options for NextAuth.js.
+ * @see https://next-auth.js.org/configuration/options
+ */
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -18,18 +22,33 @@ export const authOptions: AuthOptions = {
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
+      /**
+       * Authorizes a user based on email and password credentials.
+       * @param credentials - The email and password provided by the user.
+       * @returns A user object if authentication is successful, otherwise null.
+       */
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
-        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            passwordHash: true,
+            role: { select: { name: true } },
+          },
+        });
         if (!user?.passwordHash) return null;
         const isValid = await compare(credentials.password, user.passwordHash);
         if (!isValid) return null;
-        return {
+        const result = {
           id: user.id,
           email: user.email ?? undefined,
           name: user.name ?? undefined,
           role: user.role?.name ?? 'user',
         } satisfies { id: string; email?: string; name?: string; role: string };
+        return result;
       },
     }),
   ],
@@ -37,6 +56,10 @@ export const authOptions: AuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
+    /**
+     * Attaches the user's role to the JWT, making it available on the token.
+     * This is called when a JWT is created or updated.
+     */
     async jwt({ token, user }) {
       // Add initial default role (will be updated once we fetch from DB)
       if (user && !token.role) {
@@ -44,6 +67,10 @@ export const authOptions: AuthOptions = {
       }
       return token;
     },
+    /**
+     * Extends the session object with the user's role from the JWT.
+     * This makes the role available on the `session` object in the client.
+     */
     async session({ session, token }) {
       if (token && session.user) {
         (session.user as { role?: string }).role = (token as JWT).role as string | undefined;

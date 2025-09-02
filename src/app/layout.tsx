@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import Providers from '../providers/SessionProvider';
 
@@ -15,17 +17,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Trampolin - Facebook Ads Analytics',
-  description: 'Analyze Facebook ads reach data to discover winning products',
+  title: 'Trampolin - Facebook Ads Analytics & CSV Analytics Platform',
+  description: 'Analyze Facebook ads reach data and CSV data visualization for better business insights',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions);
+
   return (
-    <html lang="en" className="light">
+    <html lang="en" className="light" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased transition-colors`}>
         <Providers>
           <ThemeProvider>{children}</ThemeProvider>

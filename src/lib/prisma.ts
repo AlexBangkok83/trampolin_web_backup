@@ -5,7 +5,6 @@ import { PrismaClient } from '@prisma/client';
 // so we store the client on the global object in development.
 
 declare global {
-  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import PublicHeader from '../components/PublicHeader';
 import { getAppUrl } from '../lib/subdomain';
 
-export default function Home() {
+export default function HomePage() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <PublicHeader />
@@ -13,12 +13,11 @@ export default function Home() {
       <section className="px-4 pt-16 pb-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl text-center">
           <h1 className="mb-6 text-4xl font-bold text-gray-900 sm:text-6xl dark:text-white">
-            Analyze Facebook Ads
-            <span className="block text-blue-600 dark:text-blue-400">Like a Pro</span>
+            Trampolin Analytics Platform
+            <span className="block text-blue-600 dark:text-blue-400">Facebook Ads & CSV Data</span>
           </h1>
           <p className="mx-auto mb-10 max-w-3xl text-xl text-gray-600 dark:text-gray-300">
-            Get instant insights into any product's Facebook advertising reach. Simply paste a URL
-            and discover how well competitors are performing with their ads.
+            Analyze Facebook advertising reach data and upload CSV files for comprehensive data visualization and insights.
           </p>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <a
@@ -42,10 +41,10 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center">
             <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white">
-              Why Choose Trampolin?
+              Dual Analytics Platform
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-300">
-              Get the competitive intelligence you need to make data-driven decisions
+              Get the competitive intelligence and data insights you need to make informed decisions
             </p>
           </div>
 
@@ -67,11 +66,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Lightning Fast
+                Facebook Ads Intelligence
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Get Facebook ad reach data in seconds. No waiting, no delays - just instant
-                insights.
+                Get Facebook ad reach data in seconds. Analyze competitor performance and discover winning products.
               </p>
             </div>
 
@@ -92,10 +90,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Detailed Analytics
+                CSV Data Analytics
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Get comprehensive reach metrics and performance insights for any product URL.
+                Upload CSV files and visualize your data with interactive charts and comprehensive analytics.
               </p>
             </div>
 
@@ -116,10 +114,10 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Export &amp; Save
+                Export & Share
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Save high-performing products and export your data for further analysis.
+                Save insights, export reports, and share findings with your team for collaborative analysis.
               </p>
             </div>
           </div>
@@ -132,7 +130,7 @@ export default function Home() {
           <div className="mb-16 text-center">
             <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white">How It Works</h2>
             <p className="text-lg text-gray-600 dark:text-gray-300">
-              Three simple steps to get Facebook ad insights
+              Three simple steps to get actionable insights
             </p>
           </div>
 
@@ -142,10 +140,10 @@ export default function Home() {
                 1
               </div>
               <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Paste Product URL
+                Upload or Analyze
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Copy any product URL from e-commerce sites and paste it into our analyzer.
+                Either paste a product URL for Facebook ads analysis or upload your CSV data file.
               </p>
             </div>
 
@@ -154,10 +152,10 @@ export default function Home() {
                 2
               </div>
               <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Get Instant Analysis
+                Get Instant Insights
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Our system analyzes Facebook ads library data and calculates reach metrics.
+                Our platform processes your data and generates comprehensive analytics with visualizations.
               </p>
             </div>
 
@@ -166,10 +164,10 @@ export default function Home() {
                 3
               </div>
               <h3 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-                Download Insights
+                Export Results
               </h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Save high-performers and export detailed reports in CSV format.
+                Save high-performers and export detailed reports for further analysis and sharing.
               </p>
             </div>
           </div>
@@ -180,10 +178,10 @@ export default function Home() {
       <section className="bg-blue-600 py-20 dark:bg-blue-700">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <h2 className="mb-4 text-3xl font-bold text-white">
-            Ready to Analyze Your First Product?
+            Ready to Start Analyzing?
           </h2>
           <p className="mb-8 text-xl text-blue-100">
-            Join hundreds of marketers who use Trampolin to stay ahead of the competition.
+            Join hundreds of marketers and analysts who use Trampolin for data-driven insights.
           </p>
           <a
             href={getAppUrl('/signup')}
@@ -201,7 +199,7 @@ export default function Home() {
             <div>
               <h3 className="mb-4 text-xl font-bold">Trampolin</h3>
               <p className="text-gray-400">
-                The fastest way to analyze Facebook ad performance for any product.
+                Comprehensive analytics platform for Facebook ads intelligence and CSV data visualization.
               </p>
             </div>
             <div>

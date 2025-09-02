@@ -1,20 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const PUBLIC_FILE = /\.(.*)$/;
+// This function can be marked `async` if using `await` inside
+export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const isStaticExport =
+    process.env.NEXT_PHASE === 'phase-export' || process.env.NODE_ENV === 'production';
 
-export async function middleware(req: NextRequest) {
-  // Skip static files and Next.js internals
-  const pathname = req.nextUrl.pathname;
-  if (pathname.startsWith('/api') || PUBLIC_FILE.test(pathname) || pathname.startsWith('/_next')) {
+  // Skip middleware for static files and Next.js internals
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/static') ||
+    pathname.includes('.')
+  ) {
+    return NextResponse.next();
+  }
+
+  // For static export, just continue
+  if (isStaticExport) {
     return NextResponse.next();
   }
 
   // Get subdomain from host header
-  const host = req.headers.get('host') || '';
+  const host = request.headers.get('host') || '';
   const subdomain = host.split('.')[0];
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
   // Define route categories
   const publicRoutes = ['/', '/pricing', '/features', '/about', '/login', '/signup'];
@@ -26,11 +39,22 @@ export async function middleware(req: NextRequest) {
   if (process.env.NODE_ENV === 'development') {
     // Just require auth for app routes, no subdomain redirects
     if (isAppRoute && !token) {
-      const loginUrl = req.nextUrl.clone();
+      const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/login';
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
     }
+    
+    // Admin-only routes check
+    if (pathname.startsWith('/dashboard/admin')) {
+      const role = (token as { role?: string })?.role;
+      if (role !== 'admin') {
+        const notAllowed = request.nextUrl.clone();
+        notAllowed.pathname = '/403';
+        return NextResponse.rewrite(notAllowed);
+      }
+    }
+    
     return NextResponse.next();
   }
 
@@ -40,14 +64,14 @@ export async function middleware(req: NextRequest) {
 
     if (isPublicRoute && pathname !== '/login' && pathname !== '/signup') {
       // Redirect public routes to main domain
-      const redirectUrl = new URL(req.url);
+      const redirectUrl = new URL(request.url);
       redirectUrl.hostname = redirectUrl.hostname.replace('app.', '');
       return NextResponse.redirect(redirectUrl);
     }
 
     if (isAppRoute && !token) {
       // Redirect to login for protected app routes
-      const loginUrl = req.nextUrl.clone();
+      const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/login';
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
@@ -55,36 +79,52 @@ export async function middleware(req: NextRequest) {
 
     if (pathname === '/' && token) {
       // Redirect root to dashboard for authenticated users
-      const dashboardUrl = req.nextUrl.clone();
+      const dashboardUrl = request.nextUrl.clone();
       dashboardUrl.pathname = '/dashboard';
       return NextResponse.redirect(dashboardUrl);
     }
+    
+    // Admin-only routes check
+    if (pathname.startsWith('/dashboard/admin')) {
+      const role = (token as { role?: string })?.role;
+      if (role !== 'admin') {
+        const notAllowed = request.nextUrl.clone();
+        notAllowed.pathname = '/403';
+        return NextResponse.rewrite(notAllowed);
+      }
+    }
+    
   } else if (subdomain === 'insights' || !subdomain.includes('trampolin')) {
     // insights.trampolin.ai - Marketing site
 
     if (isAppRoute) {
       if (!token) {
         // Redirect to login on main domain
-        const loginUrl = req.nextUrl.clone();
+        const loginUrl = request.nextUrl.clone();
         loginUrl.pathname = '/login';
         loginUrl.searchParams.set('callbackUrl', pathname);
         return NextResponse.redirect(loginUrl);
       } else {
         // Redirect authenticated users to app subdomain
-        const appUrl = new URL(req.url);
+        const appUrl = new URL(request.url);
         appUrl.hostname = appUrl.hostname.replace('insights.', 'app.');
         return NextResponse.redirect(appUrl);
       }
     }
-
-    // Allow access to public marketing pages
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  // Temporarily disabled for subdomain development testing
-  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico).*)'],
-  // Original: matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
