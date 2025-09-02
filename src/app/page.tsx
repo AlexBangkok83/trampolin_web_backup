@@ -1,10 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import PublicHeader from '../components/PublicHeader';
 import { getAppUrl } from '../lib/subdomain';
 
 export default function HomePage() {
+  const [signupUrl, setSignupUrl] = useState('/signup');
+
+  useEffect(() => {
+    // Update signup URL on client-side to avoid hydration mismatch
+    setSignupUrl(getAppUrl('/signup'));
+  }, []);
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <PublicHeader />
@@ -21,7 +28,7 @@ export default function HomePage() {
           </p>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <a
-              href={getAppUrl('/signup')}
+              href={signupUrl}
               className="rounded-lg bg-blue-600 px-8 py-4 text-center text-lg font-semibold text-white transition-colors hover:bg-blue-700"
             >
               Start Free Trial
@@ -184,7 +191,7 @@ export default function HomePage() {
             Join hundreds of marketers and analysts who use Trampolin for data-driven insights.
           </p>
           <a
-            href={getAppUrl('/signup')}
+            href={signupUrl}
             className="inline-block rounded-lg bg-white px-8 py-4 text-lg font-semibold text-blue-600 transition-colors hover:bg-gray-100"
           >
             Start Your Free Trial

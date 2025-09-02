@@ -26,10 +26,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession(authOptions);
+  // Note: session might be used by providers in the future
+  await getServerSession(authOptions);
 
   return (
-    <html lang="en" className="light" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased transition-colors`}>
         <Providers>
           <ThemeProvider>{children}</ThemeProvider>
