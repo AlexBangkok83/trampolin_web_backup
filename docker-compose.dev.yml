@@ -1,0 +1,40 @@
+services:
+  web:
+    image: node:20-alpine
+    container_name: trampolin-web-dev
+    working_dir: /app
+    ports:
+      - '3003:3003'
+    env_file:
+      - .env.docker
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/trampolin
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "npm install && PORT=3003 npm run dev"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    ports:
+      - '5432:5432'
+    container_name: trampolin-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: trampolin
+    volumes:
+      - postgres-data-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data-dev:
