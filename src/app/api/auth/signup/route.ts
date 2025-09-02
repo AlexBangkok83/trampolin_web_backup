@@ -4,16 +4,13 @@ import { PrismaClient } from '@prisma/client';
 import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-08-27.basil',
-});
 
 // Plan mapping for limits
-const PLAN_LIMITS = {
+const getPlanLimits = () => ({
   bronze: { priceId: process.env.BRONZE_MONTHLY_PRICE!, limit: 500 },
   silver: { priceId: process.env.SILVER_MONTHLY_PRICE!, limit: 1000 },
   gold: { priceId: process.env.GOLD_MONTHLY_PRICE!, limit: 2500 },
-};
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +20,17 @@ export async function POST(request: NextRequest) {
     if (!name || !email || !password || !plan) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
     }
+
+    // Initialize Stripe and plan limits
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return NextResponse.json({ error: 'Payment service not configured' }, { status: 500 });
+    }
+
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-08-27.basil',
+    });
+
+    const PLAN_LIMITS = getPlanLimits();
 
     if (!PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS]) {
       return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 });
