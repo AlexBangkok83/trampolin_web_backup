@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import ThemeToggle from './ThemeToggle';
 import { getAppUrl } from '../lib/subdomain';
@@ -21,10 +22,13 @@ export default function PublicHeader() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
-              <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-                <span className="text-lg font-bold text-white">T</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white">Trampolin</span>
+              <Image
+                src="/logo.png"
+                alt="Trampolin"
+                width={120}
+                height={48}
+                className="h-8 w-auto dark:invert"
+              />
             </Link>
           </div>
 

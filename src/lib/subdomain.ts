@@ -13,7 +13,7 @@ export function getAppUrl(path: string = '/'): string {
 
   // Development environment
   if (currentHostname === 'localhost' || currentHostname.includes('127.0.0.1')) {
-    return `http://localhost:3002${path}`;
+    return `http://localhost:3001${path}`;
   }
 
   // Production environment - construct app subdomain
@@ -52,7 +52,7 @@ export function isAppSubdomain(): boolean {
   const port = window.location.port;
 
   // Development check
-  if (port === '3002') {
+  if (port === '3001') {
     return true;
   }
 

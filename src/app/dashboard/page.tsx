@@ -1,404 +1,403 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
-import { format } from 'date-fns';
-import { useChartData } from '@/hooks/useChartData';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-);
+interface UserSubscription {
+  id: string;
+  monthlyLimit: number;
+  usedThisMonth: number;
+  trialLimit: number;
+  trialUsed: number;
+  currentPeriodEnd: string;
+  status: string;
+  isTrialing: boolean;
+  activeLimit: number;
+  activeUsed: number;
+  activeRemaining: number;
+}
 
-// Data types for our charts
-type UserGrowthData = {
-  month: string;
-  users: number;
-};
+interface UrlAnalysis {
+  id: string;
+  url: string;
+  createdAt: string;
+  status: string;
+}
 
-type SalesData = {
-  quarter: string;
-  sales: number;
-};
+export default function Dashboard() {
+  const { data: session } = useSession();
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [recentSearches] = useState<UrlAnalysis[]>([]);
+  const [loading, setLoading] = useState(true);
 
-type TrafficSource = {
-  device: string;
-  percentage: number;
-};
+  // Fetch user subscription and recent searches
+  useEffect(() => {
+    if (session?.user) {
+      fetchDashboardData();
+    }
+  }, [session]);
 
-type RevenueSource = {
-  source: string;
-  percentage: number;
-};
-
-// Chart card component
-const ChartCard = ({
-  title,
-  description,
-  children,
-  className = '',
-  lastUpdated,
-  onRefresh,
-  isLoading = false,
-  error,
-  retryCount,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-  className?: string;
-  lastUpdated?: Date | null;
-  onRefresh?: () => Promise<void>;
-  isLoading?: boolean;
-  error?: Error | null;
-  retryCount?: number;
-}) => {
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleRefresh = async () => {
-    if (!onRefresh) return;
+  const fetchDashboardData = async () => {
     try {
-      setIsRefreshing(true);
-      await onRefresh();
+      // Fetch subscription data
+      const subResponse = await fetch('/api/user/subscription');
+      if (subResponse.ok) {
+        const subData = await subResponse.json();
+        setSubscription(subData);
+      }
+
+      // Fetch recent searches (could be implemented later)
+      // const searchResponse = await fetch('/api/user/recent-searches');
+      // if (searchResponse.ok) {
+      //   const searchData = await searchResponse.json();
+      //   setRecentSearches(searchData);
+      // }
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
     } finally {
-      setIsRefreshing(false);
+      setLoading(false);
     }
   };
 
+  const getPlanName = () => {
+    if (!subscription) return 'Loading...';
+    if (subscription.isTrialing) return 'Trial Period';
+    if (subscription.activeLimit === 500) return 'Bronze';
+    if (subscription.activeLimit === 1000) return 'Silver';
+    if (subscription.activeLimit === 2500) return 'Gold';
+    return 'Free';
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const userName = session?.user?.name?.split(' ')[0] || 'User';
+
   return (
-    <div className={`rounded-lg bg-white p-6 shadow dark:bg-gray-800 ${className}`}>
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">{title}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
+    <div className="flex flex-col min-h-full">
+      <div className="flex-1 p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
+            {getGreeting()}, {userName}! Here&apos;s your analytics overview.
+          </p>
         </div>
-        {onRefresh && (
-          <button
-            onClick={handleRefresh}
-            disabled={isLoading || isRefreshing}
-            className="rounded-full p-2 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-            title="Refresh data"
-          >
-            {isLoading || isRefreshing ? (
-              <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            ) : (
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-            )}
-          </button>
-        )}
-      </div>
-      <div className="h-64">
-        {error ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-center">
-              <div className="mb-2 text-red-500">
-                <svg
-                  className="mx-auto h-8 w-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 19.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
+
+        {/* Metric Cards */}
+        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {/* Searches This Month */}
+          <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+            <div className="mb-2">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Searches This Month
+              </h3>
+            </div>
+            <div className="flex items-baseline">
+              <p className="text-3xl font-semibold text-gray-900 dark:text-white">
+                {loading ? '...' : subscription?.activeUsed || 0}
+              </p>
+            </div>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              of{' '}
+              {loading
+                ? '...'
+                : subscription?.isTrialing
+                  ? `${subscription.trialLimit} trial limit`
+                  : `${subscription?.activeLimit || 0} monthly limit`}
+            </p>
+          </div>
+
+          {/* Saved Products */}
+          <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+            <div className="mb-2">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Saved Products
+              </h3>
+            </div>
+            <div className="flex items-baseline">
+              <p className="text-3xl font-semibold text-gray-900 dark:text-white">0</p>
+            </div>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">bookmarked</p>
+          </div>
+
+          {/* Avg. Reach */}
+          <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+            <div className="mb-2">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg. Reach</h3>
+            </div>
+            <div className="flex items-baseline">
+              <p className="text-3xl font-semibold text-gray-900 dark:text-white">0</p>
+            </div>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">per analysis</p>
+          </div>
+
+          {/* Plan */}
+          <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+            <div className="mb-2">
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Plan</h3>
+            </div>
+            <div className="flex items-baseline">
+              <p className="text-3xl font-semibold text-gray-900 dark:text-white">
+                {getPlanName()}
+              </p>
+            </div>
+            <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+              {subscription?.isTrialing ? 'Trial Period' : 'Active'}
+            </p>
+          </div>
+        </div>
+
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          {/* Recent Searches */}
+          <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+            <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
+              Recent Searches
+            </h2>
+            {recentSearches.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-gray-600 dark:text-gray-400">
+                  No searches yet. Start by analyzing your first product!
+                </p>
               </div>
-              <p className="text-sm text-red-600 dark:text-red-400">{error.message}</p>
-              {retryCount && retryCount > 0 && (
-                <p className="mt-1 text-xs text-gray-500">Retry attempt: {retryCount}/3</p>
-              )}
-              {onRefresh && (
-                <button
-                  onClick={onRefresh}
-                  className="mt-2 rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
-                >
-                  Retry
-                </button>
-              )}
+            ) : (
+              <div className="space-y-3">
+                {recentSearches.map((search) => (
+                  <div
+                    key={search.id}
+                    className="flex items-center justify-between rounded-lg border border-gray-200 p-3 dark:border-gray-600"
+                  >
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        {search.url}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(search.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-medium ${
+                        search.status === 'completed'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+                          : search.status === 'processing'
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
+                      }`}
+                    >
+                      {search.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions */}
+          <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+            <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
+              Quick Actions
+            </h2>
+            <div className="space-y-3">
+              <Link
+                href="/analyze"
+                className="block w-full rounded-lg bg-blue-600 px-4 py-3 text-center font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
+              >
+                Analyze New Product
+              </Link>
+              <Link
+                href="/saved"
+                className="block w-full rounded-lg border border-gray-300 px-4 py-3 text-center font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                View Saved Products
+              </Link>
+              <Link
+                href="/history"
+                className="block w-full rounded-lg border border-gray-300 px-4 py-3 text-center font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Search History
+              </Link>
+            </div>
+
+            {/* Usage Progress */}
+            {subscription && (
+              <div className="mt-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Usage This Period
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {subscription.activeUsed} / {subscription.activeLimit}
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                  <div
+                    className="h-full bg-blue-600 transition-all duration-300"
+                    style={{
+                      width: `${Math.min((subscription.activeUsed / subscription.activeLimit) * 100, 100)}%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {subscription.activeRemaining} searches remaining
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 bg-white py-12 dark:border-gray-700 dark:bg-gray-800">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-4 lg:gap-12">
+            {/* Company Info */}
+            <div className="md:col-span-1">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Trampolin</h3>
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                Analyze Facebook ads reach data to discover winning products and track competitor performance.
+              </p>
+              {/* Social Icons */}
+              <div className="mt-4 flex space-x-3">
+                <a href="#" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                  </svg>
+                </a>
+                <a href="#" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            {/* Product */}
+            <div>
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                PRODUCT
+              </h4>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <Link href="/analyze" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Product Analysis
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    API Access
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Integrations
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Bulk Export
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Support */}
+            <div>
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                SUPPORT
+              </h4>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Documentation
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Contact Support
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Status Page
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Feature Requests
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                LEGAL
+              </h4>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Cookie Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Data Processing Agreement
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                    Refund Policy
+                  </a>
+                </li>
+              </ul>
             </div>
           </div>
-        ) : (
-          children
-        )}
-      </div>
-      {lastUpdated && (
-        <div className="mt-2 flex items-center justify-between">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Last updated: {format(lastUpdated, 'MMM d, yyyy h:mm a')}
-          </p>
-          <div className="flex items-center gap-1">
-            <div
-              className={`h-2 w-2 rounded-full ${
-                Date.now() - lastUpdated.getTime() < 60000
-                  ? 'bg-green-500'
-                  : Date.now() - lastUpdated.getTime() < 300000
-                    ? 'bg-yellow-500'
-                    : 'bg-red-500'
-              }`}
-            ></div>
-            <span className="text-xs text-gray-400">
-              {Date.now() - lastUpdated.getTime() < 60000
-                ? 'Fresh'
-                : Date.now() - lastUpdated.getTime() < 300000
-                  ? 'Recent'
-                  : 'Stale'}
-            </span>
+
+          {/* Bottom Section */}
+          <div className="mt-12 flex flex-col items-center justify-between border-t border-gray-200 pt-8 dark:border-gray-700 md:flex-row">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              © 2025 Trampolin. All rights reserved.
+            </div>
+            <div className="mt-4 flex space-x-6 md:mt-0">
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                Security
+              </a>
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                Accessibility
+              </a>
+              <a href="#" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                GDPR
+              </a>
+            </div>
           </div>
         </div>
-      )}
-    </div>
-  );
-};
-
-// Mock data fetchers
-const fetchUserGrowthData = async (): Promise<UserGrowthData[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { month: 'Jan', users: 100 },
-        { month: 'Feb', users: 150 },
-        { month: 'Mar', users: 200 },
-        { month: 'Apr', users: 180 },
-        { month: 'May', users: 250 },
-        { month: 'Jun', users: 300 },
-      ]);
-    }, 500);
-  });
-};
-
-const fetchSalesData = async (): Promise<SalesData[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { quarter: 'Q1', sales: 12000 },
-        { quarter: 'Q2', sales: 15000 },
-        { quarter: 'Q3', sales: 18000 },
-        { quarter: 'Q4', sales: 20000 },
-      ]);
-    }, 500);
-  });
-};
-
-const fetchTrafficData = async (): Promise<TrafficSource[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { device: 'Desktop', percentage: 65 },
-        { device: 'Mobile', percentage: 30 },
-        { device: 'Tablet', percentage: 5 },
-      ]);
-    }, 500);
-  });
-};
-
-const fetchRevenueData = async (): Promise<RevenueSource[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { source: 'Products', percentage: 60 },
-        { source: 'Services', percentage: 30 },
-        { source: 'Subscriptions', percentage: 10 },
-      ]);
-    }, 500);
-  });
-};
-
-export default function DashboardPage() {
-  // User Growth Chart
-  const {
-    chartData: userGrowthData,
-    isLoading: isUserGrowthLoading,
-    refreshData: refreshUserGrowth,
-    lastUpdated: userGrowthLastUpdated,
-    error: userGrowthError,
-    retryCount: userGrowthRetryCount,
-  } = useChartData<UserGrowthData, 'line'>({
-    dataFetcher: fetchUserGrowthData,
-    xField: 'month',
-    yField: 'users',
-    label: 'Users',
-    type: 'line',
-    refreshInterval: 300, // 5 minutes
-  });
-
-  // Sales Chart
-  const {
-    chartData: salesData,
-    isLoading: isSalesLoading,
-    refreshData: refreshSales,
-    lastUpdated: salesLastUpdated,
-    error: salesError,
-    retryCount: salesRetryCount,
-  } = useChartData<SalesData, 'bar'>({
-    dataFetcher: fetchSalesData,
-    xField: 'quarter',
-    yField: 'sales',
-    label: 'Sales ($)',
-    type: 'bar',
-    refreshInterval: 300, // 5 minutes
-  });
-
-  // Traffic Sources Chart
-  const {
-    chartData: trafficData,
-    isLoading: isTrafficLoading,
-    refreshData: refreshTraffic,
-    lastUpdated: trafficLastUpdated,
-    error: trafficError,
-    retryCount: trafficRetryCount,
-  } = useChartData<TrafficSource, 'doughnut'>({
-    dataFetcher: fetchTrafficData,
-    xField: 'device',
-    yField: 'percentage',
-    label: 'Traffic Sources',
-    type: 'doughnut',
-    refreshInterval: 300, // 5 minutes
-  });
-
-  // Revenue Sources Chart
-  const {
-    chartData: revenueData,
-    isLoading: isRevenueLoading,
-    refreshData: refreshRevenue,
-    lastUpdated: revenueLastUpdated,
-    error: revenueError,
-    retryCount: revenueRetryCount,
-  } = useChartData<RevenueSource, 'pie'>({
-    dataFetcher: fetchRevenueData,
-    xField: 'source',
-    yField: 'percentage',
-    label: 'Revenue Sources',
-    type: 'pie',
-    refreshInterval: 300, // 5 minutes
-  });
-
-  // Handle refresh all charts
-  const refreshAll = useCallback(() => {
-    refreshUserGrowth();
-    refreshSales();
-    refreshTraffic();
-    refreshRevenue();
-  }, [refreshUserGrowth, refreshSales, refreshTraffic, refreshRevenue]);
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-4 dark:bg-gray-900 md:p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <button
-            onClick={refreshAll}
-            className="flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            Refresh All
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* User Growth */}
-          <ChartCard
-            title="User Growth"
-            description="Monthly active users over time"
-            isLoading={isUserGrowthLoading}
-            onRefresh={refreshUserGrowth}
-            lastUpdated={userGrowthLastUpdated}
-            error={userGrowthError}
-            retryCount={userGrowthRetryCount}
-          >
-            <Line data={userGrowthData} />
-          </ChartCard>
-
-          {/* Sales */}
-          <ChartCard
-            title="Sales Performance"
-            description="Quarterly sales figures"
-            isLoading={isSalesLoading}
-            onRefresh={refreshSales}
-            lastUpdated={salesLastUpdated}
-            error={salesError}
-            retryCount={salesRetryCount}
-          >
-            <Bar data={salesData} />
-          </ChartCard>
-
-          {/* Traffic Sources */}
-          <ChartCard
-            title="Traffic Sources"
-            description="Device breakdown of website traffic"
-            isLoading={isTrafficLoading}
-            onRefresh={refreshTraffic}
-            lastUpdated={trafficLastUpdated}
-            error={trafficError}
-            retryCount={trafficRetryCount}
-          >
-            <Doughnut data={trafficData} />
-          </ChartCard>
-
-          {/* Revenue Sources */}
-          <ChartCard
-            title="Revenue Sources"
-            description="Revenue breakdown by source"
-            isLoading={isRevenueLoading}
-            onRefresh={refreshRevenue}
-            lastUpdated={revenueLastUpdated}
-            error={revenueError}
-            retryCount={revenueRetryCount}
-          >
-            <Pie data={revenueData} />
-          </ChartCard>
-        </div>
-      </div>
+      </footer>
     </div>
   );
 }
