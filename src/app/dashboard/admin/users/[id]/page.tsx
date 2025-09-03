@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -36,7 +36,7 @@ interface UserDetails {
   urlAnalyses: Array<{
     id: string;
     url: string;
-    results: any;
+    results: Record<string, unknown>;
     createdAt: string;
   }>;
 }
@@ -50,35 +50,38 @@ export default function AdminUserDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (userId) {
-      fetchUserDetails();
-    }
-  }, [userId]);
-
-  const fetchUserDetails = async () => {
+  const fetchUserDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await fetch(`/api/admin/users/${userId}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to fetch user details');
+        setError(errorData.error || 'Failed to load user details');
       }
     } catch (err) {
-      console.error('Fetch error:', err);
-      setError('Failed to fetch user details');
+      console.error('Error fetching user details:', err);
+      setError('Failed to load user details');
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      fetchUserDetails();
+    }
+  }, [userId, fetchUserDetails]);
 
   const handleDeleteUser = async () => {
-    if (!user || !confirm(`Are you sure you want to delete ${user.email}? This action cannot be undone.`)) {
+    if (
+      !user ||
+      !confirm(`Are you sure you want to delete ${user.email}? This action cannot be undone.`)
+    ) {
       return;
     }
 
@@ -86,7 +89,7 @@ export default function AdminUserDetailPage() {
       const response = await fetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         router.push('/dashboard/admin/users');
       } else {
@@ -100,7 +103,12 @@ export default function AdminUserDetailPage() {
   };
 
   const handleLoginAs = async () => {
-    if (!user || !confirm(`Are you sure you want to login as ${user.email}? You will be redirected to the regular dashboard as that user.`)) {
+    if (
+      !user ||
+      !confirm(
+        `Are you sure you want to login as ${user.email}? You will be redirected to the regular dashboard as that user.`,
+      )
+    ) {
       return;
     }
 
@@ -115,13 +123,16 @@ export default function AdminUserDetailPage() {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Store impersonation info in localStorage
-        localStorage.setItem('impersonating', JSON.stringify({
-          originalAdmin: session?.user?.email,
-          targetUser: data.targetUser,
-          startTime: new Date().toISOString()
-        }));
+        localStorage.setItem(
+          'impersonating',
+          JSON.stringify({
+            originalAdmin: session?.user?.email,
+            targetUser: data.targetUser,
+            startTime: new Date().toISOString(),
+          }),
+        );
 
         // Redirect to main dashboard as the impersonated user
         window.location.href = `/dashboard?impersonating=${userId}&token=${data.impersonationToken}`;
@@ -141,10 +152,10 @@ export default function AdminUserDetailPage() {
         <AdminLayout>
           <div className="p-6">
             <div className="animate-pulse space-y-6">
-              <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-8 w-1/4 rounded bg-gray-200"></div>
               <div className="space-y-4">
-                <div className="h-32 bg-gray-200 rounded"></div>
-                <div className="h-48 bg-gray-200 rounded"></div>
+                <div className="h-32 rounded bg-gray-200"></div>
+                <div className="h-48 rounded bg-gray-200"></div>
               </div>
             </div>
           </div>
@@ -158,14 +169,14 @@ export default function AdminUserDetailPage() {
       <AuthGuard requiredRole="admin">
         <AdminLayout>
           <div className="p-6">
-            <div className="text-center py-12">
+            <div className="py-12 text-center">
               <h3 className="text-lg font-medium text-gray-900">Error</h3>
               <p className="mt-2 text-sm text-gray-500">{error || 'User not found'}</p>
               <Link
                 href="/dashboard/admin/users"
-                className="mt-4 inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                className="mt-4 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                <ArrowLeftIcon className="h-4 w-4 mr-2" />
+                <ArrowLeftIcon className="mr-2 h-4 w-4" />
                 Back to Users
               </Link>
             </div>
@@ -189,34 +200,34 @@ export default function AdminUserDetailPage() {
                   href="/dashboard/admin/users"
                   className="inline-flex items-center text-gray-500 hover:text-gray-700"
                 >
-                  <ArrowLeftIcon className="h-5 w-5 mr-2" />
+                  <ArrowLeftIcon className="mr-2 h-5 w-5" />
                   Back to Users
                 </Link>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <Link
                   href={`/dashboard/admin/users/${userId}/edit`}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  className="inline-flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  <PencilIcon className="h-4 w-4 mr-2" />
+                  <PencilIcon className="mr-2 h-4 w-4" />
                   Edit User
                 </Link>
-                
+
                 <button
                   onClick={handleLoginAs}
-                  className="inline-flex items-center px-3 py-2 border border-purple-300 rounded-md text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100"
+                  className="inline-flex items-center rounded-md border border-purple-300 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100"
                 >
-                  <UserCircleIcon className="h-4 w-4 mr-2" />
+                  <UserCircleIcon className="mr-2 h-4 w-4" />
                   Login As User
                 </button>
-                
+
                 {user.role?.name !== 'admin' && (
                   <button
                     onClick={handleDeleteUser}
-                    className="inline-flex items-center px-3 py-2 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100"
+                    className="inline-flex items-center rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
                   >
-                    <TrashIcon className="h-4 w-4 mr-2" />
+                    <TrashIcon className="mr-2 h-4 w-4" />
                     Delete User
                   </button>
                 )}
@@ -225,39 +236,40 @@ export default function AdminUserDetailPage() {
           </div>
 
           {/* User Profile Card */}
-          <div className="bg-white rounded-lg shadow mb-8">
-            <div className="px-6 py-4 border-b border-gray-200">
+          <div className="mb-8 rounded-lg bg-white shadow">
+            <div className="border-b border-gray-200 px-6 py-4">
               <div className="flex items-center space-x-4">
-                <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium text-xl">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
+                  <span className="text-xl font-medium text-white">
                     {user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || '?'}
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {user.name || 'No name set'}
-                  </h1>
+                  <h1 className="text-2xl font-bold text-gray-900">{user.name || 'No name set'}</h1>
                   <p className="text-gray-500">{user.email}</p>
-                  <div className="flex items-center mt-2 space-x-4">
+                  <div className="mt-2 flex items-center space-x-4">
                     <div className="flex items-center space-x-1">
                       {user.role?.name === 'admin' && (
                         <ShieldCheckIcon className="h-4 w-4 text-red-500" />
                       )}
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${
-                        user.role?.name === 'admin'
-                          ? 'bg-red-100 text-red-800 border-red-200'
-                          : 'bg-blue-100 text-blue-800 border-blue-200'
-                      }`}>
+                      <span
+                        className={`inline-flex rounded-full border px-2 py-1 text-xs font-medium ${
+                          user.role?.name === 'admin'
+                            ? 'border-red-200 bg-red-100 text-red-800'
+                            : 'border-blue-200 bg-blue-100 text-blue-800'
+                        }`}
+                      >
                         {user.role?.name || 'user'}
                       </span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <CalendarIcon className="h-4 w-4 text-gray-400" />
                       <span className="text-sm text-gray-500">
-                        Joined {new Date(user.createdAt).toLocaleDateString('en-US', {
+                        Joined{' '}
+                        {new Date(user.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
-                          day: 'numeric'
+                          day: 'numeric',
                         })}
                       </span>
                     </div>
@@ -268,90 +280,107 @@ export default function AdminUserDetailPage() {
           </div>
 
           {/* Details Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Subscription Details */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                  <CreditCardIcon className="h-5 w-5 mr-2" />
+            <div className="rounded-lg bg-white shadow">
+              <div className="border-b border-gray-200 px-6 py-4">
+                <h3 className="flex items-center text-lg font-medium text-gray-900">
+                  <CreditCardIcon className="mr-2 h-5 w-5" />
                   Subscription Details
                 </h3>
               </div>
               <div className="px-6 py-4">
                 {currentSubscription ? (
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-500">Status</span>
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${
-                        currentSubscription.status === 'active'
-                          ? 'bg-green-100 text-green-800 border-green-200'
-                          : currentSubscription.status === 'trialing'
-                          ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                          : 'bg-red-100 text-red-800 border-red-200'
-                      }`}>
+                      <span
+                        className={`inline-flex rounded-full border px-2 py-1 text-xs font-medium ${
+                          currentSubscription.status === 'active'
+                            ? 'border-green-200 bg-green-100 text-green-800'
+                            : currentSubscription.status === 'trialing'
+                              ? 'border-yellow-200 bg-yellow-100 text-yellow-800'
+                              : 'border-red-200 bg-red-100 text-red-800'
+                        }`}
+                      >
                         {currentSubscription.status}
                       </span>
                     </div>
-                    
-                    <div className="flex justify-between items-center">
+
+                    <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-500">Monthly Limit</span>
                       <span className="text-sm text-gray-900">
-                        {currentSubscription.monthlyLimit === 999999 ? '∞' : currentSubscription.monthlyLimit.toLocaleString()}
+                        {currentSubscription.monthlyLimit === 999999
+                          ? '∞'
+                          : currentSubscription.monthlyLimit.toLocaleString()}
                       </span>
                     </div>
-                    
-                    <div className="flex justify-between items-center">
+
+                    <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-500">Used This Month</span>
                       <span className="text-sm text-gray-900">
                         {currentSubscription.usedThisMonth.toLocaleString()}
                       </span>
                     </div>
-                    
+
                     <div>
-                      <div className="flex justify-between text-sm text-gray-500 mb-1">
+                      <div className="mb-1 flex justify-between text-sm text-gray-500">
                         <span>Usage</span>
                         <span>
-                          {Math.round((currentSubscription.usedThisMonth / currentSubscription.monthlyLimit) * 100)}%
+                          {Math.round(
+                            (currentSubscription.usedThisMonth / currentSubscription.monthlyLimit) *
+                              100,
+                          )}
+                          %
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
+                      <div className="h-2 w-full rounded-full bg-gray-200">
+                        <div
                           className={`h-2 rounded-full transition-all duration-300 ${
-                            currentSubscription.usedThisMonth / currentSubscription.monthlyLimit > 0.8 
-                              ? 'bg-red-500' 
-                              : currentSubscription.usedThisMonth / currentSubscription.monthlyLimit > 0.6 
-                              ? 'bg-yellow-500' 
-                              : 'bg-green-500'
+                            currentSubscription.usedThisMonth / currentSubscription.monthlyLimit >
+                            0.8
+                              ? 'bg-red-500'
+                              : currentSubscription.usedThisMonth /
+                                    currentSubscription.monthlyLimit >
+                                  0.6
+                                ? 'bg-yellow-500'
+                                : 'bg-green-500'
                           }`}
-                          style={{ 
-                            width: `${Math.min((currentSubscription.usedThisMonth / currentSubscription.monthlyLimit) * 100, 100)}%` 
+                          style={{
+                            width: `${Math.min((currentSubscription.usedThisMonth / currentSubscription.monthlyLimit) * 100, 100)}%`,
                           }}
                         ></div>
                       </div>
                     </div>
-                    
-                    <div className="pt-4 border-t border-gray-100">
-                      <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span>Created: {new Date(currentSubscription.createdAt).toLocaleDateString()}</span>
-                        <span>Updated: {new Date(currentSubscription.updatedAt).toLocaleDateString()}</span>
+
+                    <div className="border-t border-gray-100 pt-4">
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>
+                          Created: {new Date(currentSubscription.createdAt).toLocaleDateString()}
+                        </span>
+                        <span>
+                          Updated: {new Date(currentSubscription.updatedAt).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
+                  <div className="py-8 text-center">
                     <CreditCardIcon className="mx-auto h-12 w-12 text-gray-400" />
                     <h4 className="mt-2 text-sm font-medium text-gray-900">No Subscription</h4>
-                    <p className="mt-1 text-sm text-gray-500">This user does not have an active subscription</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      This user does not have an active subscription
+                    </p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                  <ChartBarIcon className="h-5 w-5 mr-2" />
+            <div className="rounded-lg bg-white shadow">
+              <div className="border-b border-gray-200 px-6 py-4">
+                <h3 className="flex items-center text-lg font-medium text-gray-900">
+                  <ChartBarIcon className="mr-2 h-5 w-5" />
                   Recent URL Analyses
                 </h3>
               </div>
@@ -359,14 +388,16 @@ export default function AdminUserDetailPage() {
                 {user.urlAnalyses.length > 0 ? (
                   <div className="space-y-3">
                     {user.urlAnalyses.map((analysis) => (
-                      <div key={analysis.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {(analysis.results as any)?.title || analysis.url}
+                      <div
+                        key={analysis.id}
+                        className="flex items-center justify-between border-b border-gray-100 py-2 last:border-b-0"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-gray-900">
+                            {((analysis.results as Record<string, unknown>)?.title as string) ||
+                              analysis.url}
                           </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {analysis.url}
-                          </p>
+                          <p className="truncate text-xs text-gray-500">{analysis.url}</p>
                         </div>
                         <span className="text-xs text-gray-400">
                           {new Date(analysis.createdAt).toLocaleDateString()}
@@ -375,10 +406,12 @@ export default function AdminUserDetailPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
+                  <div className="py-8 text-center">
                     <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
                     <h4 className="mt-2 text-sm font-medium text-gray-900">No URL Analyses</h4>
-                    <p className="mt-1 text-sm text-gray-500">This user has not analyzed any URLs yet</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      This user has not analyzed any URLs yet
+                    </p>
                   </div>
                 )}
               </div>
@@ -387,49 +420,53 @@ export default function AdminUserDetailPage() {
 
           {/* All Subscriptions History */}
           {user.subscriptions.length > 1 && (
-            <div className="mt-8 bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
+            <div className="mt-8 rounded-lg bg-white shadow">
+              <div className="border-b border-gray-200 px-6 py-4">
                 <h3 className="text-lg font-medium text-gray-900">Subscription History</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                         Monthly Limit
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                         Created
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                         Updated
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 bg-white">
                     {user.subscriptions.map((subscription) => (
                       <tr key={subscription.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${
-                            subscription.status === 'active'
-                              ? 'bg-green-100 text-green-800 border-green-200'
-                              : subscription.status === 'trialing'
-                              ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                              : 'bg-red-100 text-red-800 border-red-200'
-                          }`}>
+                        <td className="whitespace-nowrap px-6 py-4">
+                          <span
+                            className={`inline-flex rounded-full border px-2 py-1 text-xs font-medium ${
+                              subscription.status === 'active'
+                                ? 'border-green-200 bg-green-100 text-green-800'
+                                : subscription.status === 'trialing'
+                                  ? 'border-yellow-200 bg-yellow-100 text-yellow-800'
+                                  : 'border-red-200 bg-red-100 text-red-800'
+                            }`}
+                          >
                             {subscription.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {subscription.monthlyLimit === 999999 ? '∞' : subscription.monthlyLimit.toLocaleString()}
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                          {subscription.monthlyLimit === 999999
+                            ? '∞'
+                            : subscription.monthlyLimit.toLocaleString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                           {new Date(subscription.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                           {new Date(subscription.updatedAt).toLocaleDateString()}
                         </td>
                       </tr>
