@@ -1,5 +1,8 @@
 -- CreateEnum
-CREATE TYPE "public"."SubscriptionStatus" AS ENUM ('active', 'trialing', 'past_due', 'canceled', 'unpaid');
+CREATE TYPE "public"."SubscriptionStatus" AS ENUM ('incomplete', 'incomplete_expired', 'trialing', 'active', 'past_due', 'canceled', 'unpaid', 'paused');
+
+-- CreateEnum
+CREATE TYPE "public"."CsvUploadStatus" AS ENUM ('pending', 'processing', 'completed', 'failed');
 
 -- CreateTable
 CREATE TABLE "public"."User" (
@@ -9,6 +12,7 @@ CREATE TABLE "public"."User" (
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
     "passwordHash" TEXT,
+    "stripeCustomerId" TEXT,
     "roleId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -103,15 +107,35 @@ CREATE TABLE "public"."CsvUpload" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "filename" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
+    "originalName" TEXT NOT NULL,
+    "fileSize" INTEGER NOT NULL,
+    "status" "public"."CsvUploadStatus" NOT NULL DEFAULT 'pending',
+    "totalRows" INTEGER NOT NULL DEFAULT 0,
+    "validRows" INTEGER NOT NULL DEFAULT 0,
+    "errorMessage" TEXT,
+    "headers" TEXT[],
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "CsvUpload_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "public"."CsvRow" (
+    "id" TEXT NOT NULL,
+    "uploadId" TEXT NOT NULL,
+    "rowIndex" INTEGER NOT NULL,
+    "data" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CsvRow_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "public"."User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_stripeCustomerId_key" ON "public"."User"("stripeCustomerId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Role_name_key" ON "public"."Role"("name");
@@ -134,6 +158,9 @@ CREATE UNIQUE INDEX "Subscription_stripeCustomerId_key" ON "public"."Subscriptio
 -- CreateIndex
 CREATE UNIQUE INDEX "Subscription_stripeSubscriptionId_key" ON "public"."Subscription"("stripeSubscriptionId");
 
+-- CreateIndex
+CREATE INDEX "CsvRow_uploadId_rowIndex_idx" ON "public"."CsvRow"("uploadId", "rowIndex");
+
 -- AddForeignKey
 ALTER TABLE "public"."User" ADD CONSTRAINT "User_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "public"."Role"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -151,3 +178,6 @@ ALTER TABLE "public"."UrlAnalysis" ADD CONSTRAINT "UrlAnalysis_userId_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "public"."CsvUpload" ADD CONSTRAINT "CsvUpload_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."CsvRow" ADD CONSTRAINT "CsvRow_uploadId_fkey" FOREIGN KEY ("uploadId") REFERENCES "public"."CsvUpload"("id") ON DELETE CASCADE ON UPDATE CASCADE;

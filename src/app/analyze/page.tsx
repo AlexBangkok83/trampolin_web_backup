@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { PaywallBlur, usePaywallCheck } from '@/components/paywall/PaywallBlur';
 
 interface UserSubscription {
   id: string;
@@ -114,6 +115,12 @@ export default function Analyze() {
     .trim()
     .split('\n')
     .filter((url) => url.trim()).length;
+
+  // Check if content should be blocked
+  const { isBlocked, reason, usageInfo } = usePaywallCheck(subscription);
+  const planName = subscription?.activeLimit === 2500 ? 'Gold' : 
+                  subscription?.activeLimit === 1000 ? 'Silver' : 'Bronze';
+
   return (
     <div className="flex min-h-full flex-col">
       <div className="flex-1 p-8">
@@ -138,12 +145,18 @@ export default function Analyze() {
           </div>
         )}
 
-        {/* Analysis Form */}
-        <form
-          onSubmit={handleAnalyze}
-          className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-          suppressHydrationWarning
+        {/* Analysis Form with Paywall */}
+        <PaywallBlur
+          isBlocked={isBlocked}
+          reason={reason || 'subscription_required'}
+          planName={planName}
+          usageInfo={usageInfo}
         >
+          <form
+            onSubmit={handleAnalyze}
+            className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+            suppressHydrationWarning
+          >
           <div className="mb-6">
             <label
               htmlFor="urls"
@@ -323,6 +336,8 @@ export default function Analyze() {
             </div>
           </div>
         )}
+
+        </PaywallBlur>
 
         {/* How it Works */}
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-6 dark:border-blue-800 dark:bg-blue-900/20">
