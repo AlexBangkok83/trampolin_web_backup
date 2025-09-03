@@ -61,6 +61,27 @@ git push origin main
 2. Verify environment variables
 3. Check database connection
 
+## Subdomain Configuration
+
+The app supports three subdomains:
+
+- **insights.trampolin.ai** - Public marketing site (/, /pricing, /features, /about)
+- **app.insights.trampolin.ai** - Protected app interface (/dashboard, /analyze, /saved, /history)
+- **admin.insights.trampolin.ai** - Admin interface (/dashboard/admin)
+
+### DigitalOcean Domain Setup
+
+In your DigitalOcean App Platform settings, add all three domains:
+
+1. Go to Settings → Domains
+2. Add domains:
+   - `insights.trampolin.ai`
+   - `app.insights.trampolin.ai`
+   - `admin.insights.trampolin.ai`
+3. All should point to the same app instance
+
+The middleware automatically routes users to the correct subdomain based on authentication and role.
+
 ## Environment Variables (DigitalOcean)
 
 Required for production:

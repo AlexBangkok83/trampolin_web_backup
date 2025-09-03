@@ -32,8 +32,10 @@ export async function middleware(request: NextRequest) {
   // Define route categories
   const publicRoutes = ['/', '/pricing', '/features', '/about', '/login', '/signup'];
   const appRoutes = ['/dashboard', '/analyze', '/saved', '/history', '/account'];
+  const adminRoutes = ['/dashboard/admin'];
   const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/api/auth');
   const isAppRoute = appRoutes.some((route) => pathname.startsWith(route));
+  const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
 
   // In development, disable complex subdomain logic to avoid cookie issues
   if (process.env.NODE_ENV === 'development') {
@@ -65,13 +67,14 @@ export async function middleware(request: NextRequest) {
     if (isPublicRoute && pathname !== '/login' && pathname !== '/signup') {
       // Redirect public routes to main domain
       const redirectUrl = new URL(request.url);
-      redirectUrl.hostname = redirectUrl.hostname.replace('app.', '');
+      redirectUrl.hostname = redirectUrl.hostname.replace('app.', 'insights.');
       return NextResponse.redirect(redirectUrl);
     }
 
     if (isAppRoute && !token) {
-      // Redirect to login for protected app routes
-      const loginUrl = request.nextUrl.clone();
+      // Redirect to login on insights domain
+      const loginUrl = new URL(request.url);
+      loginUrl.hostname = loginUrl.hostname.replace('app.', 'insights.');
       loginUrl.pathname = '/login';
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
@@ -84,21 +87,56 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(dashboardUrl);
     }
 
-    // Admin-only routes check
-    if (pathname.startsWith('/dashboard/admin')) {
-      const role = (token as { role?: string })?.role;
-      if (role !== 'admin') {
-        const notAllowed = request.nextUrl.clone();
-        notAllowed.pathname = '/403';
-        return NextResponse.rewrite(notAllowed);
-      }
+    // Block admin routes on app subdomain
+    if (isAdminRoute) {
+      const adminUrl = new URL(request.url);
+      adminUrl.hostname = adminUrl.hostname.replace('app.', 'admin.');
+      return NextResponse.redirect(adminUrl);
+    }
+  } else if (subdomain === 'admin') {
+    // admin.insights.trampolin.ai - Admin interface
+
+    if (!token) {
+      // Redirect to login on insights domain
+      const loginUrl = new URL(request.url);
+      loginUrl.hostname = loginUrl.hostname.replace('admin.', 'insights.');
+      loginUrl.pathname = '/login';
+      loginUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    const role = (token as { role?: string })?.role;
+    if (role !== 'admin') {
+      const notAllowed = request.nextUrl.clone();
+      notAllowed.pathname = '/403';
+      return NextResponse.rewrite(notAllowed);
+    }
+
+    // Redirect non-admin routes to appropriate subdomain
+    if (isPublicRoute) {
+      const publicUrl = new URL(request.url);
+      publicUrl.hostname = publicUrl.hostname.replace('admin.', 'insights.');
+      return NextResponse.redirect(publicUrl);
+    }
+
+    if (isAppRoute && !isAdminRoute) {
+      const appUrl = new URL(request.url);
+      appUrl.hostname = appUrl.hostname.replace('admin.', 'app.');
+      return NextResponse.redirect(appUrl);
+    }
+
+    // Redirect root to admin dashboard
+    if (pathname === '/') {
+      const adminDashboard = request.nextUrl.clone();
+      adminDashboard.pathname = '/dashboard/admin';
+      return NextResponse.redirect(adminDashboard);
     }
   } else if (subdomain === 'insights' || !subdomain.includes('trampolin')) {
     // insights.trampolin.ai - Marketing site
 
-    if (isAppRoute) {
+    if (isAppRoute && !isAdminRoute) {
       if (!token) {
-        // Redirect to login on main domain
+        // Redirect to login on insights domain
         const loginUrl = request.nextUrl.clone();
         loginUrl.pathname = '/login';
         loginUrl.searchParams.set('callbackUrl', pathname);
@@ -108,6 +146,21 @@ export async function middleware(request: NextRequest) {
         const appUrl = new URL(request.url);
         appUrl.hostname = appUrl.hostname.replace('insights.', 'app.');
         return NextResponse.redirect(appUrl);
+      }
+    }
+
+    if (isAdminRoute) {
+      if (!token) {
+        // Redirect to login on insights domain
+        const loginUrl = request.nextUrl.clone();
+        loginUrl.pathname = '/login';
+        loginUrl.searchParams.set('callbackUrl', pathname);
+        return NextResponse.redirect(loginUrl);
+      } else {
+        // Redirect to admin subdomain
+        const adminUrl = new URL(request.url);
+        adminUrl.hostname = adminUrl.hostname.replace('insights.', 'admin.');
+        return NextResponse.redirect(adminUrl);
       }
     }
   }

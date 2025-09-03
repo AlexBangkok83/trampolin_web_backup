@@ -101,7 +101,8 @@ export default function Analyze() {
         const error = await response.json();
         setError(error.message || 'Analysis failed');
       }
-    } catch {
+    } catch (error) {
+      console.error('Analysis error:', error);
       setError('Failed to analyze URLs. Please try again.');
     } finally {
       setIsAnalyzing(false);

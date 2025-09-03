@@ -75,7 +75,8 @@ export default function Signup() {
       } else {
         setError(data.error || 'Failed to create account');
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('Signup error:', error);
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);

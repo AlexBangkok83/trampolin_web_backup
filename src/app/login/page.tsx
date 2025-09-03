@@ -37,7 +37,8 @@ export default function Login() {
           window.location.href = callbackUrl;
         }
       }
-    } catch (_error) {
+    } catch (error) {
+      console.error('Login error:', error);
       setError('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);

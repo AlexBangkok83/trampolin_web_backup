@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
@@ -46,7 +46,7 @@ export async function GET(_request: NextRequest) {
 
     let avgReach = 0;
     if (analysesWithResults.length > 0) {
-      const totalReach = analysesWithResults.reduce((sum, _analysis) => {
+      const totalReach = analysesWithResults.reduce((sum) => {
         // Mock reach calculation since we don't have real reach data yet
         return sum + (Math.floor(Math.random() * 25000) + 5000);
       }, 0);
