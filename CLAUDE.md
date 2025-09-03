@@ -119,6 +119,91 @@ This is a SaaS analytics platform focused on CSV data:
 - TypeScript strict mode enabled
 - Automated formatting and linting on commit
 
+## Deployment Process
+
+### Live Deployment to Production
+
+**IMPORTANT: Always deploy to the main production repository for live deployment.**
+
+#### Repository Setup
+
+- **Production Repository**: `https://github.com/BrightOnAnalytics/trampolin-web` (upstream)
+- **Backup Repository**: `https://github.com/AlexBangkok83/trampolin_web_backup` (origin)
+- **Live URL**: Connected to DigitalOcean App Platform for auto-deployment
+
+#### Pre-Deployment Checklist
+
+Run these commands in order to ensure production readiness:
+
+1. **Lint Check**: `npm run lint` (should pass with 0 errors, warnings OK)
+2. **Build Test**: `npm run build` (must succeed completely)
+3. **Test Suite**: `npm test` (all tests must pass)
+
+#### Deployment Commands
+
+**✅ CORRECT - Deploy to Production:**
+
+```bash
+git add .
+git commit -m "feat: your changes description"
+git push upstream main  # Deploys to live site
+```
+
+**⚠️ BACKUP ONLY - Not for live deployment:**
+
+```bash
+git push origin main  # Only updates backup repo
+```
+
+#### Critical Build Requirements
+
+**Environment Variables** (must be set in DigitalOcean):
+
+- `DATABASE_URL` - PostgreSQL connection string
+- `NEXTAUTH_SECRET` - Generate with `openssl rand -base64 32`
+- `NEXTAUTH_URL` - Your production domain
+- `STRIPE_SECRET_KEY` - Stripe secret key
+- `STRIPE_WEBHOOK_SECRET` - Stripe webhook secret
+
+**Common Build Issues Fixed:**
+
+- ✅ Stripe initialization moved inside functions (not at module level)
+- ✅ TypeScript strict type checking for Theme values
+- ✅ NextAuth SessionProvider properly configured in tests
+- ✅ Logo optimization with Next.js Image component
+
+#### Auto-Deployment Flow
+
+1. **Push to `upstream main`** → Triggers DigitalOcean build
+2. **DigitalOcean builds** using `npm run build`
+3. **Starts with** `npm start` (next start)
+4. **Health check** at `/api/health`
+5. **Live in ~2-5 minutes**
+
+#### Troubleshooting Deployments
+
+**If deployment fails:**
+
+1. Check DigitalOcean App Platform logs
+2. Verify environment variables are set
+3. Ensure `npm run build` passes locally
+4. Check database connectivity
+
+**Quick Recovery:**
+
+```bash
+# If you accidentally pushed to wrong repo
+git push upstream main --force-with-lease
+```
+
+#### Testing Deployment Locally
+
+```bash
+npm run build  # Must succeed
+npm start      # Test production build
+# Test at http://localhost:3000
+```
+
 ## Important Notes
 
 ### Deployment Configuration
