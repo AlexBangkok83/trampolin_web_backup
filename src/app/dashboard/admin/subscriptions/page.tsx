@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { MetricCard } from '@/components/admin/MetricCard';
@@ -13,7 +14,6 @@ import {
   XCircleIcon,
   ClockIcon,
   GiftIcon,
-  WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline';
 
 interface SubscriptionWithUser {
@@ -25,6 +25,7 @@ interface SubscriptionWithUser {
   currentPeriodEnd: string;
   canceledAt: string | null;
   priceId: string;
+  stripeSubscriptionId: string | null;
   createdAt: string;
   user: {
     id: string;
@@ -49,8 +50,11 @@ export default function AdminSubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionWithUser | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionWithUser | null>(
+    null,
+  );
   const [showAdminTools, setShowAdminTools] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,7 +66,7 @@ export default function AdminSubscriptionsPage() {
       setLoading(true);
       const [subscriptionsRes, metricsRes] = await Promise.all([
         fetch('/api/admin/subscriptions'),
-        fetch('/api/admin/subscription-metrics')
+        fetch('/api/admin/subscription-metrics'),
       ]);
 
       if (subscriptionsRes.ok) {
@@ -81,28 +85,43 @@ export default function AdminSubscriptionsPage() {
     }
   };
 
-  const filteredSubscriptions = subscriptions.filter(subscription => {
-    const matchesSearch = 
+  const filteredSubscriptions = subscriptions.filter((subscription) => {
+    const matchesSearch =
       subscription.user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       subscription.user.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesStatus = statusFilter === 'all' || subscription.status === statusFilter;
-    
+
     return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return { icon: <CheckCircleIcon className="h-4 w-4" />, class: 'bg-green-100 text-green-800 border-green-200' };
+        return {
+          icon: <CheckCircleIcon className="h-4 w-4" />,
+          class: 'bg-green-100 text-green-800 border-green-200',
+        };
       case 'trialing':
-        return { icon: <ClockIcon className="h-4 w-4" />, class: 'bg-blue-100 text-blue-800 border-blue-200' };
+        return {
+          icon: <ClockIcon className="h-4 w-4" />,
+          class: 'bg-blue-100 text-blue-800 border-blue-200',
+        };
       case 'past_due':
-        return { icon: <ExclamationTriangleIcon className="h-4 w-4" />, class: 'bg-red-100 text-red-800 border-red-200' };
+        return {
+          icon: <ExclamationTriangleIcon className="h-4 w-4" />,
+          class: 'bg-red-100 text-red-800 border-red-200',
+        };
       case 'canceled':
-        return { icon: <XCircleIcon className="h-4 w-4" />, class: 'bg-gray-100 text-gray-800 border-gray-200' };
+        return {
+          icon: <XCircleIcon className="h-4 w-4" />,
+          class: 'bg-gray-100 text-gray-800 border-gray-200',
+        };
       default:
-        return { icon: <CreditCardIcon className="h-4 w-4" />, class: 'bg-gray-100 text-gray-800 border-gray-200' };
+        return {
+          icon: <CreditCardIcon className="h-4 w-4" />,
+          class: 'bg-gray-100 text-gray-800 border-gray-200',
+        };
     }
   };
 
@@ -128,9 +147,9 @@ export default function AdminSubscriptionsPage() {
       const response = await fetch('/api/admin/extend-trial', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId, days })
+        body: JSON.stringify({ subscriptionId, days }),
       });
-      
+
       if (response.ok) {
         await fetchSubscriptionsData();
         alert(`Trial extended by ${days} days successfully`);
@@ -152,9 +171,9 @@ export default function AdminSubscriptionsPage() {
       const response = await fetch('/api/admin/adjust-credits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscriptionId, credits })
+        body: JSON.stringify({ subscriptionId, credits }),
       });
-      
+
       if (response.ok) {
         await fetchSubscriptionsData();
         alert(`${credits > 0 ? 'Added' : 'Removed'} ${Math.abs(credits)} credits successfully`);
@@ -170,57 +189,65 @@ export default function AdminSubscriptionsPage() {
     }
   };
 
-  const AdminToolsModal = ({ subscription, onClose }: { subscription: SubscriptionWithUser; onClose: () => void }) => {
+  const AdminToolsModal = ({
+    subscription,
+    onClose,
+  }: {
+    subscription: SubscriptionWithUser;
+    onClose: () => void;
+  }) => {
     const [trialDays, setTrialDays] = useState(7);
     const [creditAmount, setCreditAmount] = useState(100);
-    
+
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6">
+          <h3 className="mb-4 text-lg font-semibold text-gray-900">
             Admin Tools: {subscription.user.name || subscription.user.email}
           </h3>
-          
+
           {/* Trial Extension */}
           {subscription.status === 'trialing' && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2 flex items-center">
-                <ClockIcon className="h-4 w-4 mr-2" />
+            <div className="mb-6 rounded-lg bg-blue-50 p-4">
+              <h4 className="mb-2 flex items-center font-medium text-blue-900">
+                <ClockIcon className="mr-2 h-4 w-4" />
                 Extend Trial
               </h4>
-              <div className="flex items-center space-x-2 mb-3">
+              <div className="mb-3 flex items-center space-x-2">
                 <input
                   type="number"
                   value={trialDays}
                   onChange={(e) => setTrialDays(Number(e.target.value))}
                   min="1"
                   max="90"
-                  className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                  className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
                 />
                 <span className="text-sm text-gray-600">days</span>
               </div>
               <button
                 onClick={() => handleExtendTrial(subscription.id, trialDays)}
                 disabled={actionLoading === `extend-${subscription.id}`}
-                className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm disabled:opacity-50"
+                className="w-full rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {actionLoading === `extend-${subscription.id}` ? 'Extending...' : `Extend Trial by ${trialDays} Days`}
+                {actionLoading === `extend-${subscription.id}`
+                  ? 'Extending...'
+                  : `Extend Trial by ${trialDays} Days`}
               </button>
             </div>
           )}
-          
+
           {/* Credit Adjustment */}
-          <div className="mb-6 p-4 bg-green-50 rounded-lg">
-            <h4 className="font-medium text-green-900 mb-2 flex items-center">
-              <GiftIcon className="h-4 w-4 mr-2" />
+          <div className="mb-6 rounded-lg bg-green-50 p-4">
+            <h4 className="mb-2 flex items-center font-medium text-green-900">
+              <GiftIcon className="mr-2 h-4 w-4" />
               Adjust Credits
             </h4>
-            <div className="flex items-center space-x-2 mb-3">
+            <div className="mb-3 flex items-center space-x-2">
               <input
                 type="number"
                 value={creditAmount}
                 onChange={(e) => setCreditAmount(Number(e.target.value))}
-                className="w-24 px-2 py-1 border border-gray-300 rounded text-sm"
+                className="w-24 rounded border border-gray-300 px-2 py-1 text-sm"
                 placeholder="100"
               />
               <span className="text-sm text-gray-600">credits</span>
@@ -229,24 +256,24 @@ export default function AdminSubscriptionsPage() {
               <button
                 onClick={() => handleAdjustCredits(subscription.id, creditAmount)}
                 disabled={actionLoading === `credits-${subscription.id}`}
-                className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm disabled:opacity-50"
+                className="flex-1 rounded bg-green-600 px-3 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50"
               >
                 {actionLoading === `credits-${subscription.id}` ? 'Adding...' : 'Add Credits'}
               </button>
               <button
                 onClick={() => handleAdjustCredits(subscription.id, -creditAmount)}
                 disabled={actionLoading === `credits-${subscription.id}`}
-                className="flex-1 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm disabled:opacity-50"
+                className="flex-1 rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {actionLoading === `credits-${subscription.id}` ? 'Removing...' : 'Remove Credits'}
               </button>
             </div>
           </div>
-          
+
           <div className="flex justify-end space-x-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded text-sm"
+              className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
             >
               Close
             </button>
@@ -263,11 +290,13 @@ export default function AdminSubscriptionsPage() {
           {/* Page Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900">Subscription Management</h1>
-            <p className="text-gray-600 mt-1">Monitor subscriptions, billing, and revenue metrics</p>
+            <p className="mt-1 text-gray-600">
+              Monitor subscriptions, billing, and revenue metrics
+            </p>
           </div>
 
           {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               title="Active Subscriptions"
               value={metrics?.activeSubscriptions || 0}
@@ -295,39 +324,41 @@ export default function AdminSubscriptionsPage() {
           </div>
 
           {/* Subscriptions Table */}
-          <div className="bg-white rounded-lg shadow">
+          <div className="rounded-lg bg-white shadow">
             {/* Table Header with Filters */}
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <div className="flex items-center space-x-2">
                   <h2 className="text-lg font-medium text-gray-900">All Subscriptions</h2>
-                  <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
                     {filteredSubscriptions.length} of {subscriptions.length}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center space-x-3">
                   {/* Search */}
                   <div className="relative">
-                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                     <input
                       type="text"
                       placeholder="Search subscriptions..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm w-64"
+                      className="w-64 rounded-md border border-gray-300 py-2 pl-9 pr-4 text-sm focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
-                  
+
                   {/* Status Filter */}
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="min-w-[140px] rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
                   >
-                    {uniqueStatuses.map(status => (
+                    {uniqueStatuses.map((status) => (
                       <option key={status} value={status}>
-                        {status === 'all' ? 'All Statuses' : status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')}
+                        {status === 'all'
+                          ? 'All Statuses'
+                          : status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')}
                       </option>
                     ))}
                   </select>
@@ -342,145 +373,161 @@ export default function AdminSubscriptionsPage() {
                   <div className="animate-pulse space-y-4">
                     {[...Array(6)].map((_, i) => (
                       <div key={i} className="flex items-center space-x-4">
-                        <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+                        <div className="h-10 w-10 rounded-full bg-gray-200"></div>
                         <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                          <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                          <div className="h-4 w-1/4 rounded bg-gray-200"></div>
+                          <div className="h-3 w-1/3 rounded bg-gray-200"></div>
                         </div>
-                        <div className="h-6 bg-gray-200 rounded w-16"></div>
-                        <div className="h-6 bg-gray-200 rounded w-20"></div>
-                        <div className="h-8 bg-gray-200 rounded w-32"></div>
+                        <div className="h-6 w-16 rounded bg-gray-200"></div>
+                        <div className="h-6 w-20 rounded bg-gray-200"></div>
+                        <div className="h-8 w-32 rounded bg-gray-200"></div>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Customer
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Plan
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Usage
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Billing Cycle
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredSubscriptions.map((subscription) => {
-                      const statusBadge = getStatusBadge(subscription.status);
-                      const planName = getPlanName(subscription.monthlyLimit);
-                      
-                      return (
-                        <tr key={subscription.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-10 w-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-                                <span className="text-white font-medium text-sm">
-                                  {subscription.user.name?.[0]?.toUpperCase() || subscription.user.email?.[0]?.toUpperCase() || '?'}
+                <div>
+                  <table className="w-full divide-y divide-gray-200 rounded-lg border border-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="w-80 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Customer
+                        </th>
+                        <th className="w-32 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Plan
+                        </th>
+                        <th className="w-24 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Status
+                        </th>
+                        <th className="w-40 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Usage
+                        </th>
+                        <th className="w-48 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Billing Cycle
+                        </th>
+                        <th className="w-32 px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 bg-white">
+                      {filteredSubscriptions.map((subscription) => {
+                        const statusBadge = getStatusBadge(subscription.status);
+                        const planName = getPlanName(subscription.monthlyLimit);
+
+                        return (
+                          <tr key={subscription.id} className="hover:bg-gray-50">
+                            <td className="whitespace-nowrap px-6 py-4">
+                              <div className="flex items-center">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-pink-600">
+                                  <span className="text-sm font-medium text-white">
+                                    {subscription.user.name?.[0]?.toUpperCase() ||
+                                      subscription.user.email?.[0]?.toUpperCase() ||
+                                      '?'}
+                                  </span>
+                                </div>
+                                <div className="ml-4">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {subscription.user.name || 'No name'}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {subscription.user.email}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="whitespace-nowrap px-6 py-4">
+                              <div className="text-sm font-medium text-gray-900">{planName}</div>
+                              <div className="text-sm text-gray-500">
+                                {subscription.monthlyLimit === 999999
+                                  ? 'Unlimited'
+                                  : `${subscription.monthlyLimit.toLocaleString()}/month`}
+                              </div>
+                            </td>
+
+                            <td className="whitespace-nowrap px-6 py-4">
+                              <div
+                                className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-medium ${statusBadge.class}`}
+                              >
+                                {statusBadge.icon}
+                                <span className="ml-1">
+                                  {subscription.status.replace('_', ' ')}
                                 </span>
                               </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">
-                                  {subscription.user.name || 'No name'}
+                            </td>
+
+                            <td className="whitespace-nowrap px-6 py-4">
+                              <div className="flex items-center space-x-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="h-2 w-20 rounded-full bg-gray-200">
+                                    <div
+                                      className={`h-2 rounded-full transition-all duration-300 ${getUsageColor(subscription.usedThisMonth, subscription.monthlyLimit)}`}
+                                      style={{
+                                        width: `${Math.min((subscription.usedThisMonth / subscription.monthlyLimit) * 100, 100)}%`,
+                                      }}
+                                    ></div>
+                                  </div>
                                 </div>
-                                <div className="text-sm text-gray-500">{subscription.user.email}</div>
+                                <span className="whitespace-nowrap text-xs text-gray-500">
+                                  {subscription.usedThisMonth.toLocaleString()}/
+                                  {subscription.monthlyLimit === 999999
+                                    ? '∞'
+                                    : subscription.monthlyLimit.toLocaleString()}
+                                </span>
                               </div>
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{planName}</div>
-                            <div className="text-sm text-gray-500">
-                              {subscription.monthlyLimit === 999999 ? 'Unlimited' : `${subscription.monthlyLimit.toLocaleString()}/month`}
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full border ${statusBadge.class}`}>
-                              {statusBadge.icon}
-                              <span className="ml-1">{subscription.status.replace('_', ' ')}</span>
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center space-x-2">
-                              <div className="flex-1 min-w-0">
-                                <div className="w-20 bg-gray-200 rounded-full h-2">
-                                  <div 
-                                    className={`h-2 rounded-full transition-all duration-300 ${getUsageColor(subscription.usedThisMonth, subscription.monthlyLimit)}`}
-                                    style={{ 
-                                      width: `${Math.min((subscription.usedThisMonth / subscription.monthlyLimit) * 100, 100)}%` 
-                                    }}
-                                  ></div>
-                                </div>
+                            </td>
+
+                            <td className="whitespace-nowrap px-6 py-4">
+                              <div className="text-sm text-gray-900">
+                                {new Date(subscription.currentPeriodStart).toLocaleDateString(
+                                  'en-US',
+                                  { month: 'short', day: 'numeric' },
+                                )}{' '}
+                                -{' '}
+                                {new Date(subscription.currentPeriodEnd).toLocaleDateString(
+                                  'en-US',
+                                  { month: 'short', day: 'numeric' },
+                                )}
                               </div>
-                              <span className="text-xs text-gray-500 whitespace-nowrap">
-                                {subscription.usedThisMonth.toLocaleString()}/{subscription.monthlyLimit === 999999 ? '∞' : subscription.monthlyLimit.toLocaleString()}
-                              </span>
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {new Date(subscription.currentPeriodStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {subscription.status === 'canceled' ? 'Canceled' : `${Math.ceil((new Date(subscription.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days left`}
-                            </div>
-                          </td>
-                          
-                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                            <div className="flex items-center justify-center space-x-2">
-                              <button 
-                                onClick={() => {
-                                  setSelectedSubscription(subscription);
-                                  setShowAdminTools(true);
-                                }}
-                                className="inline-flex items-center px-2 py-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors"
+                              <div className="text-sm text-gray-500">
+                                {subscription.status === 'canceled'
+                                  ? 'Canceled'
+                                  : `${Math.ceil((new Date(subscription.currentPeriodEnd).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days left`}
+                              </div>
+                            </td>
+
+                            <td className="whitespace-nowrap px-6 py-4 text-center text-sm font-medium">
+                              <Link
+                                href={`/dashboard/admin/customer/${subscription.user.id}?tab=subscription`}
+                                className="inline-flex items-center rounded px-3 py-2 text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-900"
                               >
-                                <WrenchScrewdriverIcon className="h-3 w-3 mr-1" />
-                                Admin Tools
-                              </button>
-                              <button className="inline-flex items-center px-2 py-1 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded transition-colors">
                                 View Details
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                              </Link>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
 
             {/* Empty State */}
             {filteredSubscriptions.length === 0 && !loading && (
-              <div className="text-center py-12">
+              <div className="py-12 text-center">
                 <CreditCardIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No subscriptions found</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  {searchTerm || statusFilter !== 'all' 
-                    ? 'Try adjusting your search or filter criteria.' 
+                  {searchTerm || statusFilter !== 'all'
+                    ? 'Try adjusting your search or filter criteria.'
                     : 'No subscription data available.'}
                 </p>
               </div>
             )}
           </div>
-          
+
           {/* Admin Tools Modal */}
           {showAdminTools && selectedSubscription && (
             <AdminToolsModal
@@ -491,8 +538,160 @@ export default function AdminSubscriptionsPage() {
               }}
             />
           )}
+
+          {/* Refund Modal */}
+          {showRefundModal && selectedSubscription && (
+            <RefundModal
+              subscription={selectedSubscription}
+              onClose={() => {
+                setShowRefundModal(false);
+                setSelectedSubscription(null);
+              }}
+              onRefundProcessed={() => {
+                fetchSubscriptionsData();
+                setShowRefundModal(false);
+                setSelectedSubscription(null);
+              }}
+            />
+          )}
         </div>
       </AdminLayout>
     </AuthGuard>
+  );
+}
+
+// Refund Modal Component
+interface RefundModalProps {
+  subscription: SubscriptionWithUser;
+  onClose: () => void;
+  onRefundProcessed: () => void;
+}
+
+function RefundModal({ subscription, onClose, onRefundProcessed }: RefundModalProps) {
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundReason, setRefundReason] = useState('requested_by_customer');
+  const [adminNote, setAdminNote] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/admin/refunds', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentIntentId: subscription.stripeSubscriptionId,
+          amount: refundAmount ? parseInt(refundAmount) : undefined,
+          reason: refundReason,
+          note: adminNote,
+          userEmail: subscription.user.email,
+        }),
+      });
+
+      if (response.ok) {
+        onRefundProcessed();
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || 'Failed to process refund');
+      }
+    } catch (err) {
+      console.error('Refund error:', err);
+      setError('Failed to process refund');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="mx-4 w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Process Refund</h3>
+          <p className="mt-1 text-sm text-gray-600">
+            Refund subscription for {subscription.user.name || subscription.user.email}
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Refund Amount (cents)
+            </label>
+            <input
+              type="number"
+              value={refundAmount}
+              onChange={(e) => setRefundAmount(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Leave empty for full refund"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Amount in cents (e.g., 2000 = $20.00). Leave empty for full refund.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Reason</label>
+            <select
+              value={refundReason}
+              onChange={(e) => setRefundReason(e.target.value)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+              required
+            >
+              <option value="requested_by_customer">Requested by customer</option>
+              <option value="duplicate">Duplicate charge</option>
+              <option value="fraudulent">Fraudulent</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Admin Note</label>
+            <textarea
+              value={adminNote}
+              onChange={(e) => setAdminNote(e.target.value)}
+              rows={3}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Internal note about this refund..."
+            />
+          </div>
+
+          <div className="flex items-center justify-between space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={processing}
+              className="inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {processing ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
+                  Processing...
+                </>
+              ) : (
+                'Process Refund'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

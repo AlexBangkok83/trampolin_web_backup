@@ -6,6 +6,7 @@ import { stripe } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
+import { emailStripeEvents } from '@/lib/email-triggers';
 
 // Type definitions for Stripe webhook data
 interface StripeSubscriptionData {
@@ -126,6 +127,27 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       },
     });
 
+    // Trigger subscription created email
+    const planNameMap: Record<string, string> = {
+      [process.env.BRONZE_MONTHLY_PRICE || '']: 'Bronze Plan (Monthly)',
+      [process.env.BRONZE_ANNUAL_PRICE || '']: 'Bronze Plan (Annual)',
+      [process.env.SILVER_MONTHLY_PRICE || '']: 'Silver Plan (Monthly)',
+      [process.env.SILVER_ANNUAL_PRICE || '']: 'Silver Plan (Annual)',
+      [process.env.GOLD_MONTHLY_PRICE || '']: 'Gold Plan (Monthly)',
+      [process.env.GOLD_ANNUAL_PRICE || '']: 'Gold Plan (Annual)',
+    };
+
+    emailStripeEvents
+      .subscriptionCreated(user.id, {
+        planName: planNameMap[subscription.items.data[0]?.price.id || ''] || 'Subscription Plan',
+        amount: subscription.items.data[0]?.price.unit_amount,
+        currency: subscription.items.data[0]?.price.currency,
+        currentPeriodEnd: new Date(
+          (subscription as unknown as StripeSubscriptionData).current_period_end * 1000,
+        ),
+      })
+      .catch((error) => console.error('Email trigger failed:', error));
+
     console.log('Subscription created successfully');
   } catch (error) {
     console.error('Error handling subscription created:', error);
@@ -164,6 +186,36 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       },
     });
 
+    // Trigger subscription updated email (for renewals)
+    if (subscription.status === 'active') {
+      const user = await prisma.user.findUnique({
+        where: { id: existingSubscription.userId },
+      });
+
+      if (user) {
+        const planNameMap: Record<string, string> = {
+          [process.env.BRONZE_MONTHLY_PRICE || '']: 'Bronze Plan (Monthly)',
+          [process.env.BRONZE_ANNUAL_PRICE || '']: 'Bronze Plan (Annual)',
+          [process.env.SILVER_MONTHLY_PRICE || '']: 'Silver Plan (Monthly)',
+          [process.env.SILVER_ANNUAL_PRICE || '']: 'Silver Plan (Annual)',
+          [process.env.GOLD_MONTHLY_PRICE || '']: 'Gold Plan (Monthly)',
+          [process.env.GOLD_ANNUAL_PRICE || '']: 'Gold Plan (Annual)',
+        };
+
+        emailStripeEvents
+          .subscriptionUpdated(user.id, {
+            planName:
+              planNameMap[subscription.items.data[0]?.price.id || ''] || 'Subscription Plan',
+            amount: subscription.items.data[0]?.price.unit_amount,
+            currency: subscription.items.data[0]?.price.currency,
+            currentPeriodEnd: new Date(
+              (subscription as unknown as StripeSubscriptionData).current_period_end * 1000,
+            ),
+          })
+          .catch((error) => console.error('Email trigger failed:', error));
+      }
+    }
+
     console.log('Subscription updated successfully');
   } catch (error) {
     console.error('Error handling subscription updated:', error);
@@ -175,6 +227,12 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   try {
     console.log('Processing subscription deleted:', subscription.id);
 
+    // Get user info before updating
+    const existingSubscription = await prisma.subscription.findFirst({
+      where: { stripeSubscriptionId: subscription.id },
+      include: { user: true },
+    });
+
     // Update subscription status to canceled
     await prisma.subscription.updateMany({
       where: { stripeSubscriptionId: subscription.id },
@@ -184,6 +242,25 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
         updatedAt: new Date(),
       },
     });
+
+    // Trigger subscription canceled email
+    if (existingSubscription?.user) {
+      const planNameMap: Record<string, string> = {
+        [process.env.BRONZE_MONTHLY_PRICE || '']: 'Bronze Plan (Monthly)',
+        [process.env.BRONZE_ANNUAL_PRICE || '']: 'Bronze Plan (Annual)',
+        [process.env.SILVER_MONTHLY_PRICE || '']: 'Silver Plan (Monthly)',
+        [process.env.SILVER_ANNUAL_PRICE || '']: 'Silver Plan (Annual)',
+        [process.env.GOLD_MONTHLY_PRICE || '']: 'Gold Plan (Monthly)',
+        [process.env.GOLD_ANNUAL_PRICE || '']: 'Gold Plan (Annual)',
+      };
+
+      emailStripeEvents
+        .subscriptionCanceled(existingSubscription.userId, {
+          planName: planNameMap[existingSubscription.priceId] || 'Subscription Plan',
+          canceledAt: new Date(),
+        })
+        .catch((error) => console.error('Email trigger failed:', error));
+    }
 
     console.log('Subscription deleted successfully');
   } catch (error) {
@@ -230,6 +307,12 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
     const subscriptionId = (invoice as unknown as StripeInvoiceData).subscription as string;
 
+    // Get subscription and user info
+    const subscription = await prisma.subscription.findFirst({
+      where: { stripeSubscriptionId: subscriptionId },
+      include: { user: true },
+    });
+
     // Update subscription status based on failure
     await prisma.subscription.updateMany({
       where: { stripeSubscriptionId: subscriptionId },
@@ -238,6 +321,18 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
         updatedAt: new Date(),
       },
     });
+
+    // Trigger payment failed email
+    if (subscription?.user) {
+      emailStripeEvents
+        .paymentFailed(subscription.userId, {
+          amount: invoice.amount_due,
+          currency: invoice.currency,
+          failureReason: 'Payment method declined',
+          subscriptionId: subscription.id,
+        })
+        .catch((error) => console.error('Email trigger failed:', error));
+    }
 
     console.log('Payment failed processed successfully');
   } catch (error) {

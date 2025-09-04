@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import { SignJWT } from 'jose';
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +17,7 @@ export async function POST(request: Request) {
 
     const adminUser = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { role: true }
+      include: { role: true },
     });
 
     if (!adminUser || adminUser.role?.name !== 'admin') {
@@ -28,7 +27,7 @@ export async function POST(request: Request) {
     // Check if target user exists and is not an admin
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
-      include: { role: true }
+      include: { role: true },
     });
 
     if (!targetUser) {
@@ -39,29 +38,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Cannot impersonate admin users' }, { status: 400 });
     }
 
-    // Create an impersonation token
-    const impersonationToken = await prisma.session.create({
-      data: {
-        userId: targetUser.id,
-        sessionToken: `impersonate_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-      }
-    });
+    // Create an impersonation JWT token that we can use client-side
+    const impersonationData = {
+      adminUserId: adminUser.id,
+      adminEmail: adminUser.email,
+      targetUserId: targetUser.id,
+      targetEmail: targetUser.email,
+      targetName: targetUser.name,
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+    };
 
-    return NextResponse.json({ 
+    // Use NextAuth secret for JWT signing
+    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET);
+    const impersonationToken = await new SignJWT(impersonationData)
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setExpirationTime('24h')
+      .sign(secret);
+
+    return NextResponse.json({
       success: true,
-      impersonationToken: impersonationToken.sessionToken,
+      impersonationToken,
       targetUser: {
         id: targetUser.id,
         name: targetUser.name,
-        email: targetUser.email
-      }
+        email: targetUser.email,
+      },
     });
   } catch (error) {
     console.error('Impersonation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to create impersonation session' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create impersonation session' }, { status: 500 });
   }
 }

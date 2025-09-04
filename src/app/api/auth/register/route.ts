@@ -4,6 +4,7 @@ export const dynamic = 'force-static';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { hash } from 'bcrypt';
+import { triggerWelcomeEmail } from '@/lib/email-triggers';
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -30,11 +31,16 @@ export async function POST(req: Request) {
 
     const passwordHash = await hash(password, 10);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
       },
+    });
+
+    // Trigger welcome email asynchronously (don't block registration)
+    triggerWelcomeEmail(user.id).catch((error) => {
+      console.error('Failed to send welcome email:', error);
     });
 
     return NextResponse.json({ ok: true }, { status: 201 });

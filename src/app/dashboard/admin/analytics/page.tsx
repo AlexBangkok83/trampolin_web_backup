@@ -6,8 +6,8 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { MetricCard } from '@/components/admin/MetricCard';
 import {
   ChartBarIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   CurrencyDollarIcon,
   CalendarDaysIcon,
   ArrowPathIcon,
@@ -151,7 +151,11 @@ export default function AdminAnalyticsPage() {
               <MetricCard
                 title="User Growth Rate"
                 value={analytics ? formatPercentage(analytics.userGrowth.growthRate) : '0%'}
-                icon={analytics?.userGrowth.growthRate > 0 ? TrendingUpIcon : TrendingDownIcon}
+                icon={
+                  (analytics?.userGrowth.growthRate || 0) > 0
+                    ? ArrowTrendingUpIcon
+                    : ArrowTrendingDownIcon
+                }
                 loading={loading}
               />
               <MetricCard
@@ -170,7 +174,7 @@ export default function AdminAnalyticsPage() {
               <MetricCard
                 title="Monthly Churn Rate"
                 value={analytics ? formatPercentage(analytics.churn.rate) : '0%'}
-                icon={analytics?.churn.rate > 5 ? ExclamationTriangleIcon : ChartBarIcon}
+                icon={(analytics?.churn.rate || 0) > 5 ? ExclamationTriangleIcon : ChartBarIcon}
                 loading={loading}
                 change={
                   analytics
@@ -190,7 +194,7 @@ export default function AdminAnalyticsPage() {
               <MetricCard
                 title="Canceled This Month"
                 value={analytics?.churn.canceledThisMonth || 0}
-                icon={TrendingDownIcon}
+                icon={ArrowTrendingDownIcon}
                 loading={loading}
               />
               <MetricCard
@@ -233,7 +237,7 @@ export default function AdminAnalyticsPage() {
                 value={
                   analytics ? formatPercentage(analytics.subscriptionHealth.conversionRate) : '0%'
                 }
-                icon={TrendingUpIcon}
+                icon={ArrowTrendingUpIcon}
                 loading={loading}
               />
             </div>
@@ -258,13 +262,13 @@ export default function AdminAnalyticsPage() {
               <MetricCard
                 title="High Usage Users"
                 value={analytics?.usage.highUsageUsers || 0}
-                icon={TrendingUpIcon}
+                icon={ArrowTrendingUpIcon}
                 loading={loading}
               />
               <MetricCard
                 title="Low Usage Users"
                 value={analytics?.usage.lowUsageUsers || 0}
-                icon={TrendingDownIcon}
+                icon={ArrowTrendingDownIcon}
                 loading={loading}
               />
             </div>
@@ -297,7 +301,7 @@ export default function AdminAnalyticsPage() {
 
                 {analytics.revenue.growth > 20 && (
                   <div className="flex items-start space-x-3 rounded-lg border border-green-200 bg-green-50 p-3">
-                    <TrendingUpIcon className="mt-0.5 h-5 w-5 text-green-500" />
+                    <ArrowTrendingUpIcon className="mt-0.5 h-5 w-5 text-green-500" />
                     <div>
                       <p className="text-sm font-medium text-green-800">Strong Growth</p>
                       <p className="text-sm text-green-700">

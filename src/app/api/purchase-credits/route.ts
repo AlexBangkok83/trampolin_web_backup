@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-08-27.basil',
 });
 
 export async function POST(request: Request) {
@@ -22,13 +22,13 @@ export async function POST(request: Request) {
     // Get user with subscription info
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { 
+      include: {
         subscriptions: {
           where: { status: 'active' },
           orderBy: { createdAt: 'desc' },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     });
 
     if (!user) {
@@ -37,21 +37,26 @@ export async function POST(request: Request) {
 
     const activeSubscription = user.subscriptions[0];
     if (!activeSubscription) {
-      return NextResponse.json({ 
-        error: 'Active subscription required to purchase credits' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Active subscription required to purchase credits',
+        },
+        { status: 400 },
+      );
     }
 
     // Check if user is on Gold plan (only Gold users can buy extra credits)
-    const goldPriceIds = [
-      process.env.GOLD_MONTHLY_PRICE,
-      process.env.GOLD_ANNUAL_PRICE
-    ].filter(Boolean);
+    const goldPriceIds = [process.env.GOLD_MONTHLY_PRICE, process.env.GOLD_ANNUAL_PRICE].filter(
+      Boolean,
+    );
 
     if (!goldPriceIds.includes(activeSubscription.priceId)) {
-      return NextResponse.json({ 
-        error: 'Credit purchases are only available for Gold plan subscribers' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Credit purchases are only available for Gold plan subscribers',
+        },
+        { status: 400 },
+      );
     }
 
     // Calculate dynamic pricing
@@ -80,8 +85,8 @@ export async function POST(request: Request) {
                 type: 'credit_addon',
                 eligible_plans: 'gold',
                 credits_per_pack: creditPackSize.toString(),
-                packs: creditPacks.toString()
-              }
+                packs: creditPacks.toString(),
+              },
             },
             unit_amount: creditPackPrice,
           },
@@ -95,8 +100,8 @@ export async function POST(request: Request) {
         user_id: user.id,
         credit_packs: creditPacks.toString(),
         total_credits: totalCredits.toString(),
-        subscription_id: activeSubscription.id
-      }
+        subscription_id: activeSubscription.id,
+      },
     });
 
     return NextResponse.json({
@@ -108,15 +113,14 @@ export async function POST(request: Request) {
         totalCredits,
         pricePerPack: creditPackPrice / 100,
         totalPrice: totalPrice / 100,
-        savings: '50% off regular rate'
-      }
+        savings: '50% off regular rate',
+      },
     });
-
   } catch (error) {
     console.error('Credit purchase error:', error);
     return NextResponse.json(
       { error: 'Failed to create credit purchase session' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

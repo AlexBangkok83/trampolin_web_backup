@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -98,7 +96,5 @@ export async function GET() {
   } catch (error) {
     console.error('Dashboard API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

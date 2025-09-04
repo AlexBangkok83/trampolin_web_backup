@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 interface RouteContext {
   params: Promise<{
@@ -23,7 +21,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
 
     const adminUser = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { role: true }
+      include: { role: true },
     });
 
     if (!adminUser || adminUser.role?.name !== 'admin') {
@@ -33,7 +31,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     // Check if target user exists and is not an admin
     const targetUser = await prisma.user.findUnique({
       where: { id },
-      include: { role: true }
+      include: { role: true },
     });
 
     if (!targetUser) {
@@ -51,19 +49,16 @@ export async function DELETE(request: Request, { params }: RouteContext) {
 
     // Delete user (Prisma will cascade delete related records)
     await prisma.user.delete({
-      where: { id }
+      where: { id },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `User ${targetUser.email} deleted successfully` 
+    return NextResponse.json({
+      success: true,
+      message: `User ${targetUser.email} deleted successfully`,
     });
   } catch (error) {
     console.error('Delete user error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete user' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
   }
 }
 
@@ -79,7 +74,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
     const adminUser = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { role: true }
+      include: { role: true },
     });
 
     if (!adminUser || adminUser.role?.name !== 'admin') {
@@ -101,10 +96,10 @@ export async function GET(_request: Request, { params }: RouteContext) {
             id: true,
             url: true,
             createdAt: true,
-            results: true
-          }
-        }
-      }
+            results: true,
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -114,10 +109,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     return NextResponse.json({ user });
   } catch (error) {
     console.error('Get user error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch user' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
   }
 }
 
@@ -134,7 +126,7 @@ export async function PATCH(_request: Request, { params }: RouteContext) {
 
     const adminUser = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { role: true }
+      include: { role: true },
     });
 
     if (!adminUser || adminUser.role?.name !== 'admin') {
@@ -144,7 +136,7 @@ export async function PATCH(_request: Request, { params }: RouteContext) {
     // Check if target user exists
     const targetUser = await prisma.user.findUnique({
       where: { id },
-      include: { role: true, subscriptions: true }
+      include: { role: true, subscriptions: true },
     });
 
     if (!targetUser) {
@@ -163,15 +155,15 @@ export async function PATCH(_request: Request, { params }: RouteContext) {
         role: true,
         subscriptions: {
           orderBy: { createdAt: 'desc' },
-          take: 1
-        }
-      }
+          take: 1,
+        },
+      },
     });
 
     // Update or create subscription if needed
     if (body.subscriptionStatus && body.subscriptionStatus !== 'none') {
       const currentSubscription = targetUser.subscriptions[0];
-      
+
       if (currentSubscription) {
         // Update existing subscription
         await prisma.subscription.update({
@@ -179,7 +171,7 @@ export async function PATCH(_request: Request, { params }: RouteContext) {
           data: {
             status: body.subscriptionStatus,
             monthlyLimit: body.monthlyLimit || 1000,
-          }
+          },
         });
       } else {
         // Create new subscription
@@ -193,26 +185,23 @@ export async function PATCH(_request: Request, { params }: RouteContext) {
             currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
             monthlyLimit: body.monthlyLimit || 1000,
             usedThisMonth: 0,
-          }
+          },
         });
       }
     } else if (body.subscriptionStatus === 'none' && targetUser.subscriptions[0]) {
       // Remove subscription
       await prisma.subscription.delete({
-        where: { id: targetUser.subscriptions[0].id }
+        where: { id: targetUser.subscriptions[0].id },
       });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: 'User updated successfully',
-      user: updatedUser
+      user: updatedUser,
     });
   } catch (error) {
     console.error('Update user error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update user' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
   }
 }

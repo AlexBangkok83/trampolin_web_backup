@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 
 interface UserSubscription {
   id: string;
@@ -79,7 +80,8 @@ export default function Dashboard() {
   const userName = session?.user?.name?.split(' ')[0] || 'User';
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex min-h-full flex-col">
+      <ImpersonationBanner />
       <div className="flex-1 p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
@@ -259,7 +261,8 @@ export default function Dashboard() {
             <div className="md:col-span-1">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Trampolin</h3>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                Analyze Facebook ads reach data to discover winning products and track competitor performance.
+                Analyze Facebook ads reach data to discover winning products and track competitor
+                performance.
               </p>
               {/* Social Icons */}
               <div className="mt-4 flex space-x-3">
@@ -270,7 +273,7 @@ export default function Dashboard() {
                 </a>
                 <a href="#" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
                 </a>
               </div>
@@ -283,27 +286,42 @@ export default function Dashboard() {
               </h4>
               <ul className="mt-4 space-y-3">
                 <li>
-                  <Link href="/analyze" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <Link
+                    href="/analyze"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Product Analysis
                   </Link>
                 </li>
                 <li>
-                  <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <Link
+                    href="/dashboard"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Dashboard
                   </Link>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     API Access
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Integrations
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Bulk Export
                   </a>
                 </li>
@@ -317,27 +335,42 @@ export default function Dashboard() {
               </h4>
               <ul className="mt-4 space-y-3">
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Help Center
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Documentation
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Contact Support
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Status Page
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Feature Requests
                   </a>
                 </li>
@@ -351,27 +384,42 @@ export default function Dashboard() {
               </h4>
               <ul className="mt-4 space-y-3">
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Privacy Policy
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Terms of Service
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Cookie Policy
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Data Processing Agreement
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Refund Policy
                   </a>
                 </li>
@@ -385,13 +433,22 @@ export default function Dashboard() {
               © 2025 Trampolin. All rights reserved.
             </div>
             <div className="mt-4 flex space-x-6 md:mt-0">
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <a
+                href="#"
+                className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
                 Security
               </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <a
+                href="#"
+                className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
                 Accessibility
               </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <a
+                href="#"
+                className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
                 GDPR
               </a>
             </div>
