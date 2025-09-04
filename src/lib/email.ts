@@ -6,8 +6,8 @@ import { AdminNotificationEmail } from '@/components/emails/AdminNotificationEma
 import { PasswordResetEmail } from '@/components/emails/PasswordResetEmail';
 import { GeneralTransactionalEmail } from '@/components/emails/GeneralTransactionalEmail';
 
-// Initialize Resend with API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend with API key (optional for production builds)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Email configuration
 export const EMAIL_CONFIG = {
@@ -63,6 +63,15 @@ async function sendEmail(params: {
   replyTo?: string;
   headers?: Record<string, string>;
 }) {
+  // If Resend is not configured, log and return mock success
+  if (!resend) {
+    console.log('Email sending disabled (no RESEND_API_KEY):', {
+      to: params.to,
+      subject: params.subject,
+    });
+    return { success: true, id: 'mock-email-id' };
+  }
+
   try {
     const { data, error } = await resend.emails.send({
       from: params.from || EMAIL_CONFIG.from,
