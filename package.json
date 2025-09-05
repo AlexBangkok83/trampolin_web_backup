@@ -18,7 +18,7 @@
     "dev:main": "PORT=3001 next dev",
     "dev:app": "PORT=3002 next dev",
     "build": "next build",
-    "postbuild": "npm run db:migrate",
+    "postbuild": "node scripts/simple-migrate.mjs",
     "start": "next start",
     "seed": "npx ts-node prisma/seed.ts",
     "db:migrate": "node scripts/migrate-production.mjs",
