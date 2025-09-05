@@ -21,7 +21,7 @@
     "postbuild": "npm run db:migrate",
     "start": "next start",
     "seed": "npx ts-node prisma/seed.ts",
-    "db:migrate": "npx prisma migrate deploy && npx prisma generate",
+    "db:migrate": "node scripts/migrate-production.mjs",
     "db:seed": "npm run seed",
     "db:reset": "npx prisma migrate reset --force",
     "db:baseline": "npx prisma migrate resolve --applied 0_init",
