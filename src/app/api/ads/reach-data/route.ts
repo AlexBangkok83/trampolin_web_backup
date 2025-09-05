@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
               eu_total_reach,
               snapshot_link_url
             FROM ads
-            WHERE snapshot_link_url = ${cleanUrl}
+            WHERE snapshot_link_url LIKE '%' || ${cleanUrl} || '%'
               AND created_at IS NOT NULL
               AND eu_total_reach IS NOT NULL
           ),
