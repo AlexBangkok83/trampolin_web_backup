@@ -9,8 +9,12 @@ const prisma = new PrismaClient();
 
 // Database connection for ads data
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? true : false,
+  connectionString:
+    process.env.DATABASE_URL +
+    (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.includes('sslmode')
+      ? '?sslmode=require'
+      : ''),
+  ssl: false, // Let the connection string handle SSL
 });
 
 export async function GET(request: NextRequest) {
