@@ -9,9 +9,10 @@ const { Pool } = pg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl:
-    process.env.NODE_ENV === 'production'
+    process.env.DATABASE_URL?.includes('ssl=true') || process.env.NODE_ENV === 'production'
       ? {
           rejectUnauthorized: false,
+          ca: undefined,
         }
       : false,
 });
@@ -171,6 +172,23 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching reach data:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      code: error && typeof error === 'object' && 'code' in error ? error.code : undefined,
+      detail: error && typeof error === 'object' && 'detail' in error ? error.detail : undefined,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details:
+          process.env.NODE_ENV === 'development'
+            ? error instanceof Error
+              ? error.message
+              : 'Unknown error'
+            : undefined,
+      },
+      { status: 500 },
+    );
   }
 }
