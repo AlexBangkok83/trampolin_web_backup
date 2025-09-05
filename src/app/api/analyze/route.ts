@@ -29,13 +29,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URLs are required' }, { status: 400 });
     }
 
-    // Validate URLs
+    // Validate URLs - allow URLs with or without protocol
     const validUrls = urls.filter((url) => {
       try {
+        // Try as-is first
         new URL(url);
         return true;
       } catch {
-        return false;
+        try {
+          // Try adding https:// prefix
+          new URL(`https://${url}`);
+          return true;
+        } catch {
+          // Check if it looks like a domain/path
+          return typeof url === 'string' && url.trim().length > 0 && !url.includes(' ');
+        }
       }
     });
 

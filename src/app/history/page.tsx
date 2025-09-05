@@ -1,293 +1,349 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
+
+interface HistoryItem {
+  id: string;
+  url: string;
+  status: string;
+  createdAt: string;
+  totalReach: number;
+  adCount: number;
+  reachCategory: string;
+  reachColor: string;
+}
+
+interface PaginationData {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 export default function History() {
+  const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState<PaginationData>({
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [timeFilter, setTimeFilter] = useState('all');
+  const [reachFilter, setReachFilter] = useState('all');
+
+  const fetchHistory = useCallback(
+    async (page = 1) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: '10',
+          search: searchTerm,
+          timeFilter,
+          reachFilter,
+        });
+
+        const response = await fetch(`/api/history?${params}`);
+        if (response.ok) {
+          const result = await response.json();
+          setHistoryData(result.data || []);
+          setPagination(result.pagination);
+        } else {
+          console.error('Failed to fetch history');
+        }
+      } catch (error) {
+        console.error('Error fetching history:', error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [searchTerm, timeFilter, reachFilter],
+  );
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  const formatReach = (reach: number) => {
+    if (reach >= 1000000) {
+      return `${(reach / 1000000).toFixed(1)}M`;
+    } else if (reach >= 1000) {
+      return `${(reach / 1000).toFixed(1)}K`;
+    }
+    return reach.toString();
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 14) return '1 week ago';
+    if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
+  };
+
+  const handleReAnalyze = async (url: string) => {
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ urls: [url] }),
+      });
+
+      if (response.ok) {
+        // Refresh the history to show the new analysis
+        fetchHistory(pagination.currentPage);
+      }
+    } catch (error) {
+      console.error('Error re-analyzing URL:', error);
+    }
+  };
+
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="flex min-h-full flex-col">
       <div className="flex-1 p-8">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Search History</h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-300">
-                  View all your previous product analyses
-                </p>
-              </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Search History</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">
+            View all your previous product analyses
+          </p>
+        </div>
 
-              {/* Filters */}
-              <div className="mb-6 rounded-lg bg-white p-6 shadow dark:bg-gray-800 dark:shadow-gray-900/20">
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="min-w-64 flex-1">
-                    <input
-                      type="text"
-                      placeholder="Search by product URL or name..."
-                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400"
-                    />
-                  </div>
-                  <div>
-                    <select className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400">
-                      <option>All time</option>
-                      <option>Last 7 days</option>
-                      <option>Last 30 days</option>
-                      <option>Last 3 months</option>
-                    </select>
-                  </div>
-                  <div>
-                    <select className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400">
-                      <option>All results</option>
-                      <option>High reach (&gt;10K)</option>
-                      <option>Medium reach (5K-10K)</option>
-                      <option>Low reach (&lt;5K)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+        {/* Filters */}
+        <div className="mb-6 rounded-lg bg-white p-6 shadow dark:bg-gray-800 dark:shadow-gray-900/20">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="min-w-64 flex-1">
+              <input
+                type="text"
+                placeholder="Search by product URL or name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400"
+              />
+            </div>
+            <div>
+              <select
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value)}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+              >
+                <option value="all">All time</option>
+                <option value="last7days">Last 7 days</option>
+                <option value="last30days">Last 30 days</option>
+                <option value="last3months">Last 3 months</option>
+              </select>
+            </div>
+            <div>
+              <select
+                value={reachFilter}
+                onChange={(e) => setReachFilter(e.target.value)}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+              >
+                <option value="all">All results</option>
+                <option value="high">High reach (&gt;10K)</option>
+                <option value="medium">Medium reach (5K-10K)</option>
+                <option value="low">Low reach (&lt;5K)</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
-              {/* History Table */}
-              <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800 dark:shadow-gray-900/20">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                        Product URL
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                        Reach
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                        Date Analyzed
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-                    <tr>
+        {/* History Table */}
+        <div className="overflow-hidden rounded-lg bg-white shadow dark:bg-gray-800 dark:shadow-gray-900/20">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
+                  Product URL
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
+                  Reach
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
+                  Date Analyzed
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center">
+                    <div className="flex items-center justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent"></div>
+                      <span className="ml-2 text-gray-600 dark:text-gray-400">
+                        Loading history...
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ) : historyData.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center">
+                    <div className="text-gray-500 dark:text-gray-400">
+                      <svg
+                        className="mx-auto mb-4 h-12 w-12"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                      </svg>
+                      <p className="mb-1 text-lg font-medium text-gray-900 dark:text-white">
+                        No search history found
+                      </p>
+                      <p className="text-sm">
+                        Start by analyzing some product URLs on the analyze page.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                historyData.map((item) => {
+                  // Extract domain from URL for display
+                  const displayName =
+                    item.url.split('/').pop()?.replace(/-/g, ' ')?.replace(/\?.*$/, '') ||
+                    'Unknown Product';
+
+                  return (
+                    <tr key={item.id}>
                       <td className="whitespace-nowrap px-6 py-4">
                         <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            Wireless Earbuds Pro
+                          <div className="text-sm font-medium capitalize text-gray-900 dark:text-white">
+                            {displayName}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            klipiq.se/products/wireless-earbuds
-                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">{item.url}</div>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm font-bold text-green-600 dark:text-green-400">
-                          15.2K
+                        <div className={`text-sm font-bold ${item.reachColor}`}>
+                          {formatReach(item.totalReach)}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          High performer
+                          {item.reachCategory === 'high' && 'High performer'}
+                          {item.reachCategory === 'medium' && 'Medium reach'}
+                          {item.reachCategory === 'low' && 'Low reach'}
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
-                        2 hours ago
+                        {formatDate(item.createdAt)}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
-                        <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-                          Saved
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            item.status === 'completed'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                              : item.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                          }`}
+                        >
+                          {item.status === 'completed' ? 'Analyzed' : item.status}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                          <button
+                            onClick={() =>
+                              window.open(`/analyze?url=${encodeURIComponent(item.url)}`, '_blank')
+                            }
+                            className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                          >
                             View
                           </button>
-                          <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
+                          <button
+                            onClick={() => handleReAnalyze(item.url)}
+                            className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                          >
                             Re-analyze
                           </button>
                         </div>
                       </td>
                     </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-                    <tr>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            Smart Fitness Watch
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            shopify.com/products/smart-watch
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm font-bold text-green-600 dark:text-green-400">
-                          23.5K
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          High performer
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
-                        1 day ago
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-                          Saved
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                            View
-                          </button>
-                          <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                            Re-analyze
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+        {/* Pagination */}
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-sm text-gray-700 dark:text-gray-300">
+            Showing <span className="font-medium">{(pagination.currentPage - 1) * 10 + 1}</span> to{' '}
+            <span className="font-medium">
+              {Math.min(pagination.currentPage * 10, pagination.totalCount)}
+            </span>{' '}
+            of <span className="font-medium">{pagination.totalCount}</span> results
+          </div>
+          <nav className="relative z-0 inline-flex -space-x-px rounded-md shadow-sm">
+            <button
+              onClick={() => pagination.hasPrev && fetchHistory(pagination.currentPage - 1)}
+              disabled={!pagination.hasPrev}
+              className={`relative inline-flex items-center rounded-l-md border border-gray-300 px-2 py-2 text-sm font-medium transition-colors ${
+                pagination.hasPrev
+                  ? 'bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
+                  : 'cursor-not-allowed bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-500'
+              }`}
+            >
+              Previous
+            </button>
 
-                    <tr>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            Gaming Keyboard RGB
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            example.com/gaming-keyboard
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                          7.8K
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Medium reach</div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
-                        2 days ago
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                          Analyzed
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                            View
-                          </button>
-                          <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                            Re-analyze
-                          </button>
-                          <button className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300">
-                            Save
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+            {/* Page numbers */}
+            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+              const pageNum = i + 1;
+              const isCurrentPage = pageNum === pagination.currentPage;
 
-                    <tr>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            Bluetooth Speaker
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            store.example/bluetooth-speaker
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm font-bold text-red-600 dark:text-red-400">2.1K</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">Low reach</div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
-                        3 days ago
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                          Analyzed
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                            View
-                          </button>
-                          <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                            Re-analyze
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => fetchHistory(pageNum)}
+                  className={`relative inline-flex items-center border border-gray-300 px-4 py-2 text-sm font-medium transition-colors ${
+                    isCurrentPage
+                      ? 'bg-blue-50 text-blue-600 dark:border-gray-600 dark:bg-blue-900/30 dark:text-blue-400'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
 
-                    <tr>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            Premium Coffee Maker
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            coffee.shop/premium-maker
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm font-bold text-green-600 dark:text-green-400">
-                          18.9K
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          High performer
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
-                        1 week ago
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                          Analyzed
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
-                            View
-                          </button>
-                          <button className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
-                            Re-analyze
-                          </button>
-                          <button className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300">
-                            Save
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              <div className="mt-6 flex items-center justify-between">
-                <div className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing <span className="font-medium">1</span> to{' '}
-                  <span className="font-medium">5</span> of <span className="font-medium">47</span>{' '}
-                  results
-                </div>
-                <nav className="relative z-0 inline-flex -space-x-px rounded-md shadow-sm">
-                  <button className="relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
-                    Previous
-                  </button>
-                  <button className="relative inline-flex items-center border border-gray-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 dark:border-gray-600 dark:bg-blue-900/30 dark:text-blue-400">
-                    1
-                  </button>
-                  <button className="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
-                    2
-                  </button>
-                  <button className="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
-                    3
-                  </button>
-                  <button className="relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600">
-                    Next
-                  </button>
-                </nav>
-              </div>
+            <button
+              onClick={() => pagination.hasNext && fetchHistory(pagination.currentPage + 1)}
+              disabled={!pagination.hasNext}
+              className={`relative inline-flex items-center rounded-r-md border border-gray-300 px-2 py-2 text-sm font-medium transition-colors ${
+                pagination.hasNext
+                  ? 'bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
+                  : 'cursor-not-allowed bg-gray-100 text-gray-300 dark:bg-gray-800 dark:text-gray-500'
+              }`}
+            >
+              Next
+            </button>
+          </nav>
+        </div>
       </div>
-      
+
       {/* Footer */}
       <footer className="border-t border-gray-200 bg-white py-12 dark:border-gray-700 dark:bg-gray-800">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -296,7 +352,8 @@ export default function History() {
             <div className="md:col-span-1">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">Trampolin</h3>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                Analyze Facebook ads reach data to discover winning products and track competitor performance.
+                Analyze Facebook ads reach data to discover winning products and track competitor
+                performance.
               </p>
               {/* Social Icons */}
               <div className="mt-4 flex space-x-3">
@@ -307,7 +364,7 @@ export default function History() {
                 </a>
                 <a href="#" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
                 </a>
               </div>
@@ -320,27 +377,42 @@ export default function History() {
               </h4>
               <ul className="mt-4 space-y-3">
                 <li>
-                  <a href="/analyze" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="/analyze"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Product Analysis
                   </a>
                 </li>
                 <li>
-                  <a href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="/dashboard"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Dashboard
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     API Access
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Integrations
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Bulk Export
                   </a>
                 </li>
@@ -354,27 +426,42 @@ export default function History() {
               </h4>
               <ul className="mt-4 space-y-3">
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Help Center
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Documentation
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Contact Support
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Status Page
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Feature Requests
                   </a>
                 </li>
@@ -388,27 +475,42 @@ export default function History() {
               </h4>
               <ul className="mt-4 space-y-3">
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Privacy Policy
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Terms of Service
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Cookie Policy
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Data Processing Agreement
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white">
+                  <a
+                    href="#"
+                    className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                  >
                     Refund Policy
                   </a>
                 </li>
@@ -422,13 +524,22 @@ export default function History() {
               © 2025 Trampolin. All rights reserved.
             </div>
             <div className="mt-4 flex space-x-6 md:mt-0">
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <a
+                href="#"
+                className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
                 Security
               </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <a
+                href="#"
+                className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
                 Accessibility
               </a>
-              <a href="#" className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <a
+                href="#"
+                className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
                 GDPR
               </a>
             </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { PaywallBlur, usePaywallCheck } from '@/components/paywall/PaywallBlur';
+import ReachChart from '@/components/charts/ReachChart';
 
 interface UserSubscription {
   id: string;
@@ -27,6 +28,14 @@ export default function Analyze() {
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [success, setSuccess] = useState<string | null>(null);
+  const [chartData, setChartData] = useState<
+    Array<{
+      url: string;
+      originalUrl: string;
+      data: Array<{ date: string; reach: number; adCount: number }>;
+    }>
+  >([]);
+  const [chartLoading, setChartLoading] = useState(false);
 
   // Fetch user subscription data
   useEffect(() => {
@@ -77,7 +86,9 @@ export default function Analyze() {
     setError(null);
     setSuccess(null);
     setResults([]);
+    setChartData([]);
     setIsAnalyzing(true);
+    setChartLoading(true);
 
     try {
       const response = await fetch('/api/analyze', {
@@ -94,8 +105,29 @@ export default function Analyze() {
         await fetchSubscription();
         // Show results
         setResults(result.analyses || []);
+
+        // Fetch reach data for chart
+        try {
+          const reachResponse = await fetch('/api/ads/reach-data', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ urls: urlList }),
+          });
+
+          if (reachResponse.ok) {
+            const reachData = await reachResponse.json();
+            setChartData(reachData.results || []);
+          } else {
+            console.error('Failed to fetch reach data');
+          }
+        } catch (error) {
+          console.error('Error fetching reach data:', error);
+        }
+
         setSuccess(
-          `Successfully analyzed ${urlList.length} URL${urlList.length !== 1 ? 's' : ''}! Check your dashboard for detailed results.`,
+          `Successfully analyzed ${urlList.length} URL${urlList.length !== 1 ? 's' : ''}! Check the chart below for Facebook ads reach data.`,
         );
         setUrls(''); // Clear the textarea
       } else {
@@ -107,6 +139,7 @@ export default function Analyze() {
       setError('Failed to analyze URLs. Please try again.');
     } finally {
       setIsAnalyzing(false);
+      setChartLoading(false);
     }
   };
 
@@ -118,8 +151,12 @@ export default function Analyze() {
 
   // Check if content should be blocked
   const { isBlocked, reason, usageInfo } = usePaywallCheck(subscription);
-  const planName = subscription?.activeLimit === 2500 ? 'Gold' : 
-                  subscription?.activeLimit === 1000 ? 'Silver' : 'Bronze';
+  const planName =
+    subscription?.activeLimit === 2500
+      ? 'Gold'
+      : subscription?.activeLimit === 1000
+        ? 'Silver'
+        : 'Bronze';
 
   return (
     <div className="flex min-h-full flex-col">
@@ -157,186 +194,197 @@ export default function Analyze() {
             className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
             suppressHydrationWarning
           >
-          <div className="mb-6">
-            <label
-              htmlFor="urls"
-              className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
-            >
-              Product URLs
-            </label>
-            <textarea
-              id="urls"
-              name="urls"
-              rows={6}
-              value={urls}
-              onChange={(e) => setUrls(e.target.value)}
-              disabled={isAnalyzing}
-              className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400 dark:disabled:bg-gray-800"
-              placeholder="Enter one or more product URLs (one per line)&#10;&#10;Examples:&#10;https://shopify.store/products/wireless-earbuds&#10;https://klipiq.se/products/smart-watch&#10;https://example.com/products/fitness-tracker"
-            />
-            <div className="mt-2 flex items-center justify-between text-sm">
-              <p className="text-gray-500 dark:text-gray-400">
-                You can analyze up to 10 URLs at once. Each URL counts as one search.
-              </p>
-              {urlCount > 0 && (
-                <span
-                  className={`font-medium ${
-                    urlCount > remaining
-                      ? 'text-red-600 dark:text-red-400'
-                      : 'text-green-600 dark:text-green-400'
-                  }`}
-                >
-                  {urlCount} URL{urlCount !== 1 ? 's' : ''} selected
-                </span>
-              )}
+            <div className="mb-6">
+              <label
+                htmlFor="urls"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-200"
+              >
+                Product URLs
+              </label>
+              <textarea
+                id="urls"
+                name="urls"
+                rows={6}
+                value={urls}
+                onChange={(e) => setUrls(e.target.value)}
+                disabled={isAnalyzing}
+                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400 dark:disabled:bg-gray-800"
+                placeholder="Enter one or more product URLs (one per line)&#10;&#10;Examples:&#10;https://shopify.store/products/wireless-earbuds&#10;https://klipiq.se/products/smart-watch&#10;https://example.com/products/fitness-tracker"
+              />
+              <div className="mt-2 flex items-center justify-between text-sm">
+                <p className="text-gray-500 dark:text-gray-400">
+                  You can analyze up to 10 URLs at once. Each URL counts as one search.
+                </p>
+                {urlCount > 0 && (
+                  <span
+                    className={`font-medium ${
+                      urlCount > remaining
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-green-600 dark:text-green-400'
+                    }`}
+                  >
+                    {urlCount} URL{urlCount !== 1 ? 's' : ''} selected
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {loading ? (
-                <span>Loading subscription...</span>
-              ) : subscription ? (
-                <span>
-                  {subscription.isTrialing ? (
-                    <>
-                      Trial searches remaining:{' '}
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {remaining} of {subscription.trialLimit}
-                      </span>
-                      <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
-                        (Free Trial)
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      Searches remaining this month:{' '}
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {remaining} of {subscription.activeLimit}
-                      </span>
-                    </>
-                  )}
-                </span>
-              ) : (
-                <span className="text-red-600 dark:text-red-400">No active subscription found</span>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={isAnalyzing || !urls.trim() || urlCount > remaining || !subscription}
-              className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-offset-gray-800 dark:disabled:bg-gray-600"
-            >
-              {isAnalyzing ? 'Analyzing...' : 'Analyze URLs'}
-            </button>
-          </div>
-        </form>
-
-        {/* Quick Start Examples */}
-        <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-            Quick Start Examples
-          </h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
-              <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  Analyze trending wireless earbuds
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  shopify.store/products/wireless-earbuds
-                </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {loading ? (
+                  <span>Loading subscription...</span>
+                ) : subscription ? (
+                  <span>
+                    {subscription.isTrialing ? (
+                      <>
+                        Trial searches remaining:{' '}
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {remaining} of {subscription.trialLimit}
+                        </span>
+                        <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
+                          (Free Trial)
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        Searches remaining this month:{' '}
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {remaining} of {subscription.activeLimit}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-red-600 dark:text-red-400">
+                    No active subscription found
+                  </span>
+                )}
               </div>
               <button
-                type="button"
-                onClick={() => setUrls('https://shopify.store/products/wireless-earbuds')}
-                className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                type="submit"
+                disabled={isAnalyzing || !urls.trim() || urlCount > remaining || !subscription}
+                className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-offset-gray-800 dark:disabled:bg-gray-600"
               >
-                Try this
+                {isAnalyzing ? 'Analyzing...' : 'Analyze URLs'}
               </button>
             </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
-              <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  Check smart watch performance
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  klipiq.se/products/smart-watch
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setUrls('https://klipiq.se/products/smart-watch')}
-                className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                Try this
-              </button>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
-              <div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  Fitness tracker analysis
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  example.com/products/fitness-tracker
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setUrls('https://example.com/products/fitness-tracker')}
-                className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                Try this
-              </button>
-            </div>
-          </div>
-        </div>
+          </form>
 
-        {/* Results Display */}
-        {results.length > 0 && (
+          {/* Quick Start Examples */}
           <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-              Analysis Results
+              Quick Start Examples
             </h3>
             <div className="space-y-3">
-              {results.map((result, index) => (
-                <div
-                  key={(result as { id?: string }).id || index}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 p-4 dark:border-gray-600"
-                >
-                  <div className="flex-1">
-                    <div className="mb-1 text-sm font-medium text-gray-900 dark:text-white">
-                      {(result as { url?: string }).url}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      Status:{' '}
-                      <span className="font-medium text-green-600 dark:text-green-400">
-                        {(result as { status?: string }).status}
-                      </span>
-                    </div>
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
+                <div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    Phone accessory with 658K reach
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                      {(result as { url?: string }).url?.length || 0} chars
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">Character count</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    clipia.se/products/clipia
                   </div>
                 </div>
-              ))}
-            </div>
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">
-                Analysis completed for {results.length} URL{results.length !== 1 ? 's' : ''}
-              </span>
-              <button
-                onClick={() => (window.location.href = '/dashboard')}
-                className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                View Dashboard →
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setUrls('clipia.se/products/clipia')}
+                  className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  Try this
+                </button>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
+                <div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    Home product with 47K reach
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    hemmaro.se/products/muslintacke
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUrls('hemmaro.se/products/muslintacke')}
+                  className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  Try this
+                </button>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
+                <div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    Lifestyle product with 69K reach
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    happified.se/products/glimra-eldlykta
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUrls('happified.se/products/glimra-eldlykta')}
+                  className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  Try this
+                </button>
+              </div>
             </div>
           </div>
-        )}
 
+          {/* Chart Display */}
+          {(chartData.length > 0 || chartLoading) && (
+            <div className="mb-8">
+              <ReachChart datasets={chartData} isLoading={chartLoading} />
+            </div>
+          )}
+
+          {/* Results Display */}
+          {results.length > 0 && (
+            <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Analysis Results
+              </h3>
+              <div className="space-y-3">
+                {results.map((result, index) => (
+                  <div
+                    key={(result as { id?: string }).id || index}
+                    className="flex items-center justify-between rounded-lg border border-gray-200 p-4 dark:border-gray-600"
+                  >
+                    <div className="flex-1">
+                      <div className="mb-1 text-sm font-medium text-gray-900 dark:text-white">
+                        {(result as { url?: string }).url}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Status:{' '}
+                        <span className="font-medium text-green-600 dark:text-green-400">
+                          {(result as { status?: string }).status}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+                        Analysis Ready
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        Facebook Ads Data
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Facebook ads reach analysis completed for {results.length} URL
+                  {results.length !== 1 ? 's' : ''}
+                </span>
+                <button
+                  onClick={() => (window.location.href = '/history')}
+                  className="font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                >
+                  View History →
+                </button>
+              </div>
+            </div>
+          )}
         </PaywallBlur>
 
         {/* How it Works */}
@@ -361,7 +409,7 @@ export default function Analyze() {
               <div>
                 <div className="font-medium text-gray-900 dark:text-white">We analyze</div>
                 <div className="text-gray-600 dark:text-gray-300">
-                  Count URL characters and structure
+                  Search Facebook ads database for reach data
                 </div>
               </div>
             </div>
@@ -372,7 +420,7 @@ export default function Analyze() {
               <div>
                 <div className="font-medium text-gray-900 dark:text-white">Get insights</div>
                 <div className="text-gray-600 dark:text-gray-300">
-                  View character count and URL breakdown
+                  View Facebook ads reach trends and performance
                 </div>
               </div>
             </div>
