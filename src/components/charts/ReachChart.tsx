@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
   TimeScale,
+  Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import 'chartjs-adapter-date-fns';
@@ -24,6 +25,7 @@ ChartJS.register(
   Tooltip,
   Legend,
   TimeScale,
+  Filler,
 );
 
 interface ReachDataPoint {

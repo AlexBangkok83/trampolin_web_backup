@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
+import { normalizeUrl } from '@/utils/urlUtils';
 
 const prisma = new PrismaClient();
 
@@ -19,15 +20,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URLs are required' }, { status: 400 });
     }
 
-    // Clean URLs to match database format (remove https://, http://, www.)
-    const cleanUrls = urls.map((url: string) => {
-      let cleaned = url.trim();
-      // Remove protocol
-      cleaned = cleaned.replace(/^https?:\/\//, '');
-      // Remove www.
-      cleaned = cleaned.replace(/^www\./, '');
-      return cleaned;
-    });
+    // Clean URLs using proper normalization
+    const cleanUrls = urls.map((url: string) => normalizeUrl(url));
 
     const results = [];
 

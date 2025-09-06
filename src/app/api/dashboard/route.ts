@@ -38,18 +38,11 @@ export async function GET() {
     ).length;
 
     // Calculate average reach from analyses
-    const analysesWithResults = user.urlAnalyses.filter(
-      (analysis) => analysis.results && typeof analysis.results === 'object',
-    );
 
-    let avgReach = 0;
-    if (analysesWithResults.length > 0) {
-      const totalReach = analysesWithResults.reduce((sum) => {
-        // Mock reach calculation since we don't have real reach data yet
-        return sum + (Math.floor(Math.random() * 25000) + 5000);
-      }, 0);
-      avgReach = Math.floor(totalReach / analysesWithResults.length);
-    }
+    // Average reach - return 0 if no real data is available
+    const avgReach = 0;
+    // TODO: Calculate from real ads reach data when available
+    // For now, return 0 to show "NO DATA" state
 
     // Determine plan name based on price ID
     const planNames: { [key: string]: string } = {

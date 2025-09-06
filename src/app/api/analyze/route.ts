@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
+import { normalizeUrl } from '@/utils/urlUtils';
+import { getTotalReachForUrl, getHistoricalReachForAnalysis } from '@/utils/serverReachUtils';
+import { getReachCategory } from '@/utils/reachUtils';
 
 const prisma = new PrismaClient();
 
@@ -101,63 +104,130 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 403 });
     }
 
-    // Create URL analysis records and update usage
-    const analysisPromises = validUrls.map((url) =>
-      prisma.urlAnalysis.create({
-        data: {
+    // Create or update URL analysis records
+    const analysisPromises = validUrls.map(async (url) => {
+      // Normalize URL before saving to database (Facebook redirects, www cleanup, etc.)
+      const cleanUrl = normalizeUrl(url);
+      console.log('🆔 URL processing - Original:', url, '-> Normalized:', cleanUrl);
+
+      // Check if user already has this URL analyzed
+      const existingAnalysis = await prisma.urlAnalysis.findFirst({
+        where: {
           userId: user.id,
-          url: url,
-          status: 'pending',
+          url: cleanUrl,
         },
-      }),
-    );
+      });
+
+      if (existingAnalysis) {
+        // Update existing analysis - this will update the updatedAt timestamp automatically
+        return prisma.urlAnalysis.update({
+          where: { id: existingAnalysis.id },
+          data: {
+            status: 'pending',
+            // Clear previous results to indicate fresh analysis
+            results: undefined,
+          },
+        });
+      } else {
+        // Create new analysis
+        return prisma.urlAnalysis.create({
+          data: {
+            userId: user.id,
+            url: cleanUrl,
+            status: 'pending',
+          },
+        });
+      }
+    });
 
     const analyses = await Promise.all(analysisPromises);
 
-    // Update subscription usage (trial or monthly)
+    // Deduct credits for ALL analyses (including re-analyses)
+    const totalAnalysesCount = analyses.length;
+
+    console.log('🔍 Credit deduction debug:', {
+      totalAnalyses: totalAnalysesCount,
+      isTrialing,
+      previousUsed: isTrialing ? subscription.trialUsed : subscription.usedThisMonth,
+      willDeduct: totalAnalysesCount,
+    });
+
+    // Update subscription usage for ALL analyses (trial or monthly)
     const updateData = isTrialing
-      ? { trialUsed: subscription.trialUsed + urlCount }
-      : { usedThisMonth: subscription.usedThisMonth + urlCount };
+      ? { trialUsed: subscription.trialUsed + totalAnalysesCount }
+      : { usedThisMonth: subscription.usedThisMonth + totalAnalysesCount };
 
     await prisma.subscription.update({
       where: { id: subscription.id },
       data: updateData,
     });
+    console.log('✅ Credits deducted:', totalAnalysesCount);
 
-    // Simple character count analysis instead of complex Facebook Ads analysis
-    const completionPromises = analyses.map((analysis) =>
-      prisma.urlAnalysis.update({
+    // Real Facebook Ads analysis with saved data
+    const completionPromises = analyses.map(async (analysis) => {
+      console.log('🎆 Analyzing URL:', analysis.url);
+      // Get real reach data from ads database
+      const totalReach = await getTotalReachForUrl(analysis.url);
+      const { category: reachCategory, color: reachColor } = getReachCategory(totalReach);
+      console.log('🎆 Analysis result for', analysis.url, '- Total reach:', totalReach);
+
+      // Get historical chart data
+      const historicalData = await getHistoricalReachForAnalysis(analysis.url);
+
+      // Calculate metadata based on real data
+      let adCount = 0;
+      let totalDays = 0;
+      let firstDay = null;
+      let lastDay = null;
+      let avgReachPerDay = 0;
+
+      if (totalReach > 0) {
+        if (historicalData.length > 0) {
+          // Use real historical data
+          adCount = historicalData.reduce((sum, day) => sum + day.adCount, 0);
+          totalDays = historicalData.length;
+          firstDay = historicalData[0].date;
+          lastDay = historicalData[historicalData.length - 1].date;
+          avgReachPerDay = totalDays > 0 ? Math.round(totalReach / totalDays) : 0;
+        } else {
+          // Fallback to minimal values
+          adCount = 1;
+          totalDays = 1;
+          firstDay = new Date().toISOString().split('T')[0];
+          lastDay = firstDay;
+          avgReachPerDay = totalReach;
+        }
+      }
+
+      // Save complete analysis results to database
+      return prisma.urlAnalysis.update({
         where: { id: analysis.id },
         data: {
           status: 'completed',
           results: {
             url: analysis.url,
-            character_count: analysis.url.length,
-            analysis: {
-              total_characters: analysis.url.length,
-              url_breakdown: {
-                protocol: analysis.url.startsWith('https') ? 'HTTPS (secure)' : 'HTTP',
-                length_category:
-                  analysis.url.length < 50
-                    ? 'Short'
-                    : analysis.url.length < 100
-                      ? 'Medium'
-                      : 'Long',
-                has_query_params: analysis.url.includes('?'),
-                domain: analysis.url.split('/')[2] || 'unknown',
-              },
-            },
+            totalReach,
+            adCount,
+            avgReachPerDay,
+            totalDays,
+            firstDay,
+            lastDay,
+            reachCategory,
+            reachColor,
+            chartData: historicalData, // Save historical chart data
             analyzed_at: new Date().toISOString(),
           },
         },
-      }),
-    );
+      });
+    });
 
     await Promise.all(completionPromises);
 
+    const message = `Successfully analyzed ${totalAnalysesCount} URL${totalAnalysesCount !== 1 ? 's' : ''}. ${totalAnalysesCount} credit${totalAnalysesCount !== 1 ? 's' : ''} deducted.`;
+
     return NextResponse.json({
       success: true,
-      message: `Started analysis for ${urlCount} URL${urlCount !== 1 ? 's' : ''}`,
+      message,
       analyses: analyses.map((a) => ({
         id: a.id,
         url: a.url,
@@ -165,10 +235,10 @@ export async function POST(request: NextRequest) {
       })),
       usage: {
         used: isTrialing
-          ? subscription.trialUsed + urlCount
-          : subscription.usedThisMonth + urlCount,
+          ? subscription.trialUsed + totalAnalysesCount
+          : subscription.usedThisMonth + totalAnalysesCount,
         limit: isTrialing ? subscription.trialLimit : currentLimit,
-        remaining: remaining - urlCount,
+        remaining: remaining - totalAnalysesCount,
         type: limitType,
         isTrialing: isTrialing,
       },

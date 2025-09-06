@@ -204,6 +204,48 @@ npm start      # Test production build
 # Test at http://localhost:3000
 ```
 
+## CRITICAL DATABASE SAFETY RULES
+
+### Database Operation Restrictions
+
+**🚨 ABSOLUTE PROHIBITION - NO DATABASE OPERATIONS BY AI 🚨**
+
+ALL database operations, migrations, schema changes, or data modifications of ANY kind must be handled exclusively by Thomas (Senior Developer). This includes but is not limited to:
+
+**NEVER ALLOWED:**
+
+- `npx prisma migrate deploy`
+- `npx prisma db push`
+- `npx prisma migrate reset`
+- `npx prisma migrate resolve`
+- Direct SQL operations on production
+- Schema modifications
+- Data imports/exports
+- User creation scripts
+- Database connection troubleshooting that involves write operations
+- ANY command that could modify database structure or data
+- **PROVIDING database commands to users to run on production**
+- **INSTRUCTING users to execute database operations**
+
+**AI MUST NEVER:**
+
+- Provide database commands for users to execute
+- Give step-by-step database operation instructions
+- Troubleshoot database issues that require production access
+- Create scripts for users to run against production databases
+
+**PROCESS FOR DATABASE ISSUES:**
+
+1. If a database-related issue arises, AI must respond: "This requires database access. Please contact Thomas with the following details:"
+2. Document the exact requirement and issue
+3. Provide clear technical specifications
+4. **DO NOT provide commands or instructions**
+5. **DO NOT attempt to troubleshoot database connectivity**
+6. Simply redirect: "Please ask Thomas to handle this database operation"
+
+**BACKGROUND:**
+This restriction exists due to a catastrophic data loss incident on September 5, 2025, where AI-assisted database migration commands overwrote a production database containing 50M+ Facebook ads records with a development schema, causing complete data loss. Only application-level code changes (read-only API operations) are permitted.
+
 ## Important Notes
 
 ### Deployment Configuration

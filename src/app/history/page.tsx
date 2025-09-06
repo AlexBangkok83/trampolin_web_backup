@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { generateAnalysisId } from '@/utils/reachUtils';
+import { Star } from 'lucide-react';
+import ThumbnailChart from '@/components/charts/ThumbnailChart';
 
 interface HistoryItem {
   id: string;
@@ -9,8 +13,14 @@ interface HistoryItem {
   createdAt: string;
   totalReach: number;
   adCount: number;
+  avgReachPerDay: number;
+  totalDays: number;
+  firstDay: string | null;
+  lastDay: string | null;
   reachCategory: string;
   reachColor: string;
+  isFavorited?: boolean;
+  chartData?: Array<{ date: string; reach: number }>;
 }
 
 interface PaginationData {
@@ -22,6 +32,7 @@ interface PaginationData {
 }
 
 export default function History() {
+  const router = useRouter();
   const [historyData, setHistoryData] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationData>({
@@ -34,6 +45,35 @@ export default function History() {
   const [searchTerm, setSearchTerm] = useState('');
   const [timeFilter, setTimeFilter] = useState('all');
   const [reachFilter, setReachFilter] = useState('all');
+  const [favoritesFilter, setFavoritesFilter] = useState('all');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  // Fetch real chart data for history items that don't have saved chart data (backwards compatibility)
+  const fetchRealChartData = async (
+    url: string,
+  ): Promise<Array<{ date: string; reach: number; adCount: number }>> => {
+    try {
+      const chartResponse = await fetch('/api/ads/historical-reach', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (chartResponse.ok) {
+        const chartResult = await chartResponse.json();
+
+        if (chartResult.success && chartResult.data && chartResult.data.length > 0) {
+          return chartResult.data;
+        }
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching chart data for', url, error);
+      return [];
+    }
+  };
 
   const fetchHistory = useCallback(
     async (page = 1) => {
@@ -50,10 +90,59 @@ export default function History() {
         const response = await fetch(`/api/history?${params}`);
         if (response.ok) {
           const result = await response.json();
-          setHistoryData(result.data || []);
+
+          // Handle both new analyses (with saved chart data) and old analyses (need to fetch chart data)
+          const dataWithCharts = await Promise.all(
+            (result.data || []).map(async (item: HistoryItem) => {
+              // If the item already has chart data (new analyses), use it
+              if (item.chartData && item.chartData.length > 0) {
+                return {
+                  ...item,
+                  chartData: item.chartData,
+                };
+              }
+
+              // If no saved chart data (old analyses), fetch it live for backwards compatibility
+              if (item.totalReach > 0) {
+                const realChartData = await fetchRealChartData(item.url);
+                return {
+                  ...item,
+                  chartData: realChartData.map((point) => ({
+                    date: point.date,
+                    reach: point.reach,
+                  })),
+                };
+              }
+
+              // No data available
+              return {
+                ...item,
+                chartData: [],
+              };
+            }),
+          );
+
+          setHistoryData(dataWithCharts);
           setPagination(result.pagination);
         } else {
-          console.error('Failed to fetch history');
+          const errorData = await response.json().catch(() => ({}));
+          console.error(
+            'Failed to fetch history:',
+            response.status,
+            errorData.error || 'Unknown error',
+          );
+
+          // If unauthorized, show empty state rather than error
+          if (response.status === 401) {
+            setHistoryData([]);
+            setPagination({
+              currentPage: 1,
+              totalPages: 1,
+              totalCount: 0,
+              hasNext: false,
+              hasPrev: false,
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching history:', error);
@@ -80,10 +169,18 @@ export default function History() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 1) return '1 day ago';
+    // Check if it's the same day
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) return 'Today';
+
+    // Calculate calendar day difference correctly
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffTime = Math.abs(nowOnly.getTime() - dateOnly.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 14) return '1 week ago';
     if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
@@ -101,13 +198,45 @@ export default function History() {
       });
 
       if (response.ok) {
-        // Refresh the history to show the new analysis
-        fetchHistory(pagination.currentPage);
+        // Generate hash-based ID for the new analysis
+        const cleanUrl = url.replace(/^https?:\/\//, '').replace(/^www\./, '');
+        const analysisId = generateAnalysisId(cleanUrl);
+
+        // Navigate to the new analysis page
+        router.push(`/analysis/${analysisId}`);
       }
     } catch (error) {
       console.error('Error re-analyzing URL:', error);
     }
   };
+
+  // Load favorites from localStorage on mount
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('favoritedProducts');
+    if (savedFavorites) {
+      setFavorites(new Set(JSON.parse(savedFavorites)));
+    }
+  }, []);
+
+  // Toggle favorite status
+  const toggleFavorite = (itemId: string) => {
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(itemId)) {
+      newFavorites.delete(itemId);
+    } else {
+      newFavorites.add(itemId);
+    }
+    setFavorites(newFavorites);
+    localStorage.setItem('favoritedProducts', JSON.stringify([...newFavorites]));
+  };
+
+  // Filter history data based on favorites filter
+  const filteredHistoryData = historyData.filter((item) => {
+    if (favoritesFilter === 'favorites-only') {
+      return favorites.has(item.id);
+    }
+    return true;
+  });
 
   return (
     <div className="flex min-h-full flex-col">
@@ -155,6 +284,16 @@ export default function History() {
                 <option value="low">Low reach (&lt;5K)</option>
               </select>
             </div>
+            <div>
+              <select
+                value={favoritesFilter}
+                onChange={(e) => setFavoritesFilter(e.target.value)}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-400"
+              >
+                <option value="all">All products</option>
+                <option value="favorites-only">Favorites only</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -167,13 +306,13 @@ export default function History() {
                   Product URL
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
+                  Trend
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                   Reach
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                   Date Analyzed
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                  Status
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
                   Actions
@@ -192,7 +331,7 @@ export default function History() {
                     </div>
                   </td>
                 </tr>
-              ) : historyData.length === 0 ? (
+              ) : filteredHistoryData.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
                     <div className="text-gray-500 dark:text-gray-400">
@@ -219,7 +358,7 @@ export default function History() {
                   </td>
                 </tr>
               ) : (
-                historyData.map((item) => {
+                filteredHistoryData.map((item) => {
                   // Extract domain from URL for display
                   const displayName =
                     item.url.split('/').pop()?.replace(/-/g, ' ')?.replace(/\?.*$/, '') ||
@@ -236,41 +375,74 @@ export default function History() {
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
+                        {item.chartData && item.chartData.length > 0 ? (
+                          <div className="h-10 w-24">
+                            <ThumbnailChart
+                              data={item.chartData}
+                              color={
+                                item.reachColor?.includes('green')
+                                  ? '#10B981'
+                                  : item.reachColor?.includes('blue')
+                                    ? '#3B82F6'
+                                    : item.reachColor?.includes('yellow')
+                                      ? '#F59E0B'
+                                      : '#6B7280'
+                              }
+                              height={40}
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-10 w-24 items-center justify-center rounded bg-gray-100 dark:bg-gray-700">
+                            <span className="text-xs text-gray-400">No data</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
                         <div className={`text-sm font-bold ${item.reachColor}`}>
                           {formatReach(item.totalReach)}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {item.reachCategory === 'high' && 'High performer'}
-                          {item.reachCategory === 'medium' && 'Medium reach'}
-                          {item.reachCategory === 'low' && 'Low reach'}
+                          {item.avgReachPerDay > 0 && (
+                            <>
+                              {formatReach(item.avgReachPerDay)}/day
+                              {item.totalDays > 0 && ` • ${item.totalDays} days`}
+                            </>
+                          )}
+                          {item.avgReachPerDay === 0 && (
+                            <>
+                              {item.reachCategory === 'high' && 'High performer'}
+                              {item.reachCategory === 'medium' && 'Medium reach'}
+                              {item.reachCategory === 'low' && 'Low reach'}
+                            </>
+                          )}
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 dark:text-gray-200">
                         {formatDate(item.createdAt)}
                       </td>
-                      <td className="whitespace-nowrap px-6 py-4">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            item.status === 'completed'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                              : item.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                          }`}
-                        >
-                          {item.status === 'completed' ? 'Analyzed' : item.status}
-                        </span>
-                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                        <div className="flex justify-end space-x-2">
+                        <div className="flex items-center justify-end space-x-2">
                           <button
-                            onClick={() =>
-                              window.open(`/analyze?url=${encodeURIComponent(item.url)}`, '_blank')
+                            onClick={() => toggleFavorite(item.id)}
+                            className={`rounded-full p-1 transition-colors ${
+                              favorites.has(item.id)
+                                ? 'text-yellow-500 hover:text-yellow-600'
+                                : 'text-gray-400 hover:text-yellow-500'
+                            }`}
+                            title={
+                              favorites.has(item.id) ? 'Remove from favorites' : 'Add to favorites'
                             }
+                          >
+                            <Star
+                              className={`h-4 w-4 ${favorites.has(item.id) ? 'fill-current' : ''}`}
+                            />
+                          </button>
+                          <a
+                            href={`/analysis/${item.id}`}
                             className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                           >
-                            View
-                          </button>
+                            View Results
+                          </a>
                           <button
                             onClick={() => handleReAnalyze(item.url)}
                             className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"

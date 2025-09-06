@@ -43,12 +43,12 @@ type NavigationSection = {
 
 const navigation: (NavigationItem | NavigationSection)[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Analyze', href: '/analyze', icon: Search },
   {
     title: 'ANALYTICS',
     items: [
-      { name: 'Saved Products', href: '/saved', icon: BookmarkIcon },
+      { name: 'Analyze', href: '/analyze', icon: Search },
       { name: 'Search History', href: '/history', icon: Clock },
+      { name: 'Saved Products', href: '/saved', icon: BookmarkIcon },
       { name: 'Reports', href: '/dashboard/reports', icon: FileText },
     ],
   },

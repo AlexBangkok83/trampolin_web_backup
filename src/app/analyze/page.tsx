@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { PaywallBlur, usePaywallCheck } from '@/components/paywall/PaywallBlur';
 import ReachChart from '@/components/charts/ReachChart';
+import { normalizeUrl } from '@/utils/urlUtils';
+import { getSubscriptionWithCache, clearSubscriptionCache } from '@/utils/subscriptionCache';
 
 interface UserSubscription {
   id: string;
@@ -17,6 +19,13 @@ interface UserSubscription {
   activeLimit: number;
   activeUsed: number;
   activeRemaining: number;
+}
+
+interface PopularExample {
+  url: string;
+  originalUrl: string;
+  description: string;
+  totalReach: number;
 }
 
 export default function Analyze() {
@@ -36,25 +45,44 @@ export default function Analyze() {
     }>
   >([]);
   const [chartLoading, setChartLoading] = useState(false);
+  const [examples, setExamples] = useState<PopularExample[]>([]);
+  const [examplesLoading, setExamplesLoading] = useState(true);
 
-  // Fetch user subscription data
+  // Use cached subscription data with 24-hour cache
   useEffect(() => {
     if (session?.user) {
-      fetchSubscription();
+      fetchSubscriptionData();
+    } else {
+      setLoading(false);
     }
+    fetchExamples();
   }, [session]);
 
-  const fetchSubscription = async () => {
+  const fetchSubscriptionData = async () => {
     try {
-      const response = await fetch('/api/user/subscription');
-      if (response.ok) {
-        const data = await response.json();
-        setSubscription(data);
+      // Use cached subscription with 24-hour cache duration
+      const subData = await getSubscriptionWithCache();
+      if (subData) {
+        setSubscription(subData);
       }
     } catch (error) {
-      console.error('Failed to fetch subscription:', error);
+      console.error('Failed to fetch subscription data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchExamples = async () => {
+    try {
+      const response = await fetch('/api/popular-examples');
+      if (response.ok) {
+        const data = await response.json();
+        setExamples(data.examples || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch examples:', error);
+    } finally {
+      setExamplesLoading(false);
     }
   };
 
@@ -62,11 +90,24 @@ export default function Analyze() {
     e.preventDefault();
     if (!urls.trim()) return;
 
-    const urlList = urls
+    // Automatically normalize URLs (Facebook redirects, www cleanup, etc.)
+    const rawUrlList = urls
       .trim()
       .split('\n')
       .filter((url) => url.trim());
-    const urlCount = urlList.length;
+
+    const normalizedUrlList = rawUrlList.map((url) => {
+      const cleaned = normalizeUrl(url.trim());
+      // Add back https:// for processing
+      return cleaned.startsWith('http') ? cleaned : `https://${cleaned}`;
+    });
+
+    // Update the URLs in the textarea to show the cleaned versions
+    if (JSON.stringify(normalizedUrlList) !== JSON.stringify(rawUrlList)) {
+      setUrls(normalizedUrlList.join('\n'));
+    }
+
+    const urlCount = normalizedUrlList.length;
 
     // Check usage limits (trial or monthly)
     if (subscription) {
@@ -96,13 +137,14 @@ export default function Analyze() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ urls: urlList }),
+        body: JSON.stringify({ urls: normalizedUrlList }),
       });
 
       if (response.ok) {
         const result = await response.json();
-        // Refresh subscription data to show updated usage
-        await fetchSubscription();
+        // Clear cache and refresh subscription data to show updated usage
+        clearSubscriptionCache();
+        await fetchSubscriptionData();
         // Show results
         setResults(result.analyses || []);
 
@@ -113,7 +155,7 @@ export default function Analyze() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ urls: urlList }),
+            body: JSON.stringify({ urls: normalizedUrlList }),
           });
 
           if (reachResponse.ok) {
@@ -127,7 +169,7 @@ export default function Analyze() {
         }
 
         setSuccess(
-          `Successfully analyzed ${urlList.length} URL${urlList.length !== 1 ? 's' : ''}! Check the chart below for Facebook ads reach data.`,
+          `Successfully analyzed ${normalizedUrlList.length} URL${normalizedUrlList.length !== 1 ? 's' : ''}! Check the chart below for Facebook ads reach data.`,
         );
         setUrls(''); // Clear the textarea
       } else {
@@ -229,32 +271,38 @@ export default function Analyze() {
               </div>
             </div>
 
+            {/* Usage Progress */}
+            {subscription && !loading && (
+              <div className="mb-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {subscription.isTrialing ? 'Trial Usage' : 'Usage This Period'}
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {subscription.activeUsed} / {subscription.activeLimit}
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                  <div
+                    className="h-full bg-blue-600 transition-all duration-300"
+                    style={{
+                      width: `${Math.min((subscription.activeUsed / subscription.activeLimit) * 100, 100)}%`,
+                    }}
+                  ></div>
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {remaining} searches remaining
+                  {subscription.isTrialing && (
+                    <span className="ml-2 text-blue-600 dark:text-blue-400">(Free Trial)</span>
+                  )}
+                </p>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                {loading ? (
-                  <span>Loading subscription...</span>
-                ) : subscription ? (
-                  <span>
-                    {subscription.isTrialing ? (
-                      <>
-                        Trial searches remaining:{' '}
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {remaining} of {subscription.trialLimit}
-                        </span>
-                        <span className="ml-2 text-xs text-blue-600 dark:text-blue-400">
-                          (Free Trial)
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        Searches remaining this month:{' '}
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {remaining} of {subscription.activeLimit}
-                        </span>
-                      </>
-                    )}
-                  </span>
-                ) : (
+                {loading && <span>Loading subscription...</span>}
+                {!subscription && !loading && (
                   <span className="text-red-600 dark:text-red-400">
                     No active subscription found
                   </span>
@@ -270,72 +318,57 @@ export default function Analyze() {
             </div>
           </form>
 
-          {/* Quick Start Examples */}
-          <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
-              Quick Start Examples
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
-                <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    Phone accessory with 658K reach
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    clipia.se/products/clipia
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setUrls('clipia.se/products/clipia')}
-                  className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  Try this
-                </button>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
-                <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    Home product with 47K reach
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    hemmaro.se/products/muslintacke
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setUrls('hemmaro.se/products/muslintacke')}
-                  className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  Try this
-                </button>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700">
-                <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    Lifestyle product with 69K reach
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    happified.se/products/glimra-eldlykta
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setUrls('happified.se/products/glimra-eldlykta')}
-                  className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  Try this
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* Chart Display */}
           {(chartData.length > 0 || chartLoading) && (
             <div className="mb-8">
               <ReachChart datasets={chartData} isLoading={chartLoading} />
             </div>
           )}
+
+          {/* Quick Start Examples */}
+          <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+              Quick Start Examples
+            </h3>
+            {examplesLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="rounded-lg border border-gray-200 p-3 dark:border-gray-600"
+                  >
+                    <div className="animate-pulse">
+                      <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700"></div>
+                      <div className="mt-2 h-3 w-1/2 rounded bg-gray-100 dark:bg-gray-800"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {examples.map((example, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+                  >
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {example.description}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{example.url}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setUrls(example.url)}
+                      className="text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                    >
+                      Try this
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Results Display */}
           {results.length > 0 && (

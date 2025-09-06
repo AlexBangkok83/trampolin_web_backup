@@ -2,20 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
-import pg from 'pg';
-
-const { Pool } = pg;
+import { generateAnalysisId } from '@/utils/reachUtils';
 const prisma = new PrismaClient();
 
 // Database connection for ads data
-const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL +
-    (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.includes('sslmode')
-      ? '?sslmode=require'
-      : ''),
-  ssl: false, // Let the connection string handle SSL
-});
+// const pool = new Pool({
+//   connectionString:
+//     process.env.DATABASE_URL +
+//     (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.includes('sslmode')
+//       ? '?sslmode=require'
+//       : ''),
+//   ssl: false, // Let the connection string handle SSL
+// });
 
 export async function GET(request: NextRequest) {
   try {
@@ -86,147 +84,91 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Get the analyses with pagination
-    const [analyses, totalCount] = await Promise.all([
-      prisma.urlAnalysis.findMany({
-        where: whereClause,
-        orderBy: {
-          createdAt: 'desc',
-        },
-        skip,
-        take: limit,
-      }),
-      prisma.urlAnalysis.count({
-        where: whereClause,
-      }),
-    ]);
+    // Fetch real URL analyses from database
+    const dbAnalyses = await prisma.urlAnalysis.findMany({
+      where: whereClause,
+      orderBy: { updatedAt: 'desc' }, // Order by updatedAt so re-analyzed URLs appear at top
+      skip,
+      take: limit,
+    });
 
-    // Get reach data for each URL from ads database
-    const analysesWithReach = await Promise.all(
-      analyses.map(async (analysis) => {
-        try {
-          // Clean URL to match database format
-          let cleanUrl = analysis.url.trim();
-          cleanUrl = cleanUrl.replace(/^https?:\/\//, '');
-          cleanUrl = cleanUrl.replace(/^www\./, '');
+    // Get total count for pagination
+    const totalUniqueCount = await prisma.urlAnalysis.count({
+      where: whereClause,
+    });
 
-          // Query ads database for reach data using forward-filling logic
-          // Get the latest total reach with forward-filled values
-          const reachQuery = `
-            WITH base AS (
-              SELECT
-                id,
-                created_at::date AS day,
-                eu_total_reach,
-                snapshot_link_url
-              FROM ads
-              WHERE snapshot_link_url = $1
-                AND created_at IS NOT NULL
-                AND eu_total_reach IS NOT NULL
-            ),
-            daily_snapshots AS (
-              SELECT
-                id,
-                day,
-                MAX(eu_total_reach) AS eu_total_reach,
-                snapshot_link_url
-              FROM base
-              GROUP BY id, day, snapshot_link_url
-            ),
-            ad_series AS (
-              SELECT
-                id,
-                generate_series(MIN(day), current_date, '1 day') AS day,
-                snapshot_link_url
-              FROM daily_snapshots
-              GROUP BY id, snapshot_link_url
-            ),
-            ad_daily AS (
-              SELECT
-                s.id,
-                s.day,
-                ds.eu_total_reach,
-                s.snapshot_link_url
-              FROM ad_series s
-              LEFT JOIN daily_snapshots ds ON s.id = ds.id AND s.day = ds.day
-            ),
-            ad_daily_filled AS (
-              SELECT
-                id,
-                day,
-                MAX(eu_total_reach) OVER (
-                  PARTITION BY id
-                  ORDER BY day
-                  ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-                ) AS eu_total_reach_filled,
-                snapshot_link_url
-              FROM ad_daily
-            )
-            SELECT
-              SUM(eu_total_reach_filled) AS total_reach,
-              COUNT(DISTINCT id) AS ad_count
-            FROM ad_daily_filled
-            WHERE day = current_date
-          `;
+    console.log('📊 Database analyses found:', {
+      totalCount: totalUniqueCount,
+      currentPage: dbAnalyses.length,
+      userEmail: user.email,
+    });
 
-          // Try exact match first
-          let result = await pool.query(reachQuery, [cleanUrl]);
+    // Convert database analyses to the expected format and deduplicate by URL
+    const urlMap = new Map();
 
-          // If no exact match found, try with common variations
-          if (!result.rows[0]?.total_reach) {
-            const variations = [
-              `https://${cleanUrl}`,
-              `http://${cleanUrl}`,
-              `https://www.${cleanUrl}`,
-              `http://www.${cleanUrl}`,
-            ];
+    // Process analyses in order (already sorted by updatedAt DESC)
+    for (const analysis of dbAnalyses) {
+      const url = analysis.url;
 
-            for (const variation of variations) {
-              result = await pool.query(reachQuery, [variation]);
-              if (result.rows[0]?.total_reach) break;
-            }
-          }
+      // Only keep the first (most recent) entry for each URL
+      if (!urlMap.has(url)) {
+        urlMap.set(url, {
+          id: generateAnalysisId(analysis.url),
+          url: analysis.url,
+          status: analysis.status,
+          createdAt: analysis.createdAt,
+          updatedAt: analysis.updatedAt,
+          userId: user.id,
+          results: analysis.results, // Include the results field with saved chart data
+        });
+      }
+    }
 
-          const totalReach = parseInt(result.rows[0]?.total_reach) || 0;
-          const adCount = parseInt(result.rows[0]?.ad_count) || 0;
+    const validAnalyses = Array.from(urlMap.values());
 
-          // Calculate reach category
-          let reachCategory = 'low';
-          let reachColor = 'text-red-600 dark:text-red-400';
+    // Use saved analysis results from database (no live queries)
+    const analysesWithReach = validAnalyses.map((analysis) => {
+      // Get saved results from the analysis record
+      const results = analysis.results as Record<string, unknown>;
 
-          if (totalReach >= 10000) {
-            reachCategory = 'high';
-            reachColor = 'text-green-600 dark:text-green-400';
-          } else if (totalReach >= 5000) {
-            reachCategory = 'medium';
-            reachColor = 'text-orange-600 dark:text-orange-400';
-          }
-
-          return {
-            id: analysis.id,
-            url: analysis.url,
-            status: analysis.status,
-            createdAt: analysis.createdAt,
-            totalReach,
-            adCount,
-            reachCategory,
-            reachColor,
-          };
-        } catch (error) {
-          console.error(`Error fetching reach for ${analysis.url}:`, error);
-          return {
-            id: analysis.id,
-            url: analysis.url,
-            status: analysis.status,
-            createdAt: analysis.createdAt,
-            totalReach: 0,
-            adCount: 0,
-            reachCategory: 'low',
-            reachColor: 'text-red-600 dark:text-red-400',
-          };
-        }
-      }),
-    );
+      if (results && typeof results === 'object') {
+        // Use saved data from the analysis
+        return {
+          id: analysis.id,
+          url: analysis.url,
+          status: analysis.status,
+          createdAt: analysis.createdAt,
+          updatedAt: analysis.updatedAt,
+          totalReach: typeof results.totalReach === 'number' ? results.totalReach : 0,
+          adCount: typeof results.adCount === 'number' ? results.adCount : 0,
+          avgReachPerDay: typeof results.avgReachPerDay === 'number' ? results.avgReachPerDay : 0,
+          totalDays: typeof results.totalDays === 'number' ? results.totalDays : 0,
+          firstDay: typeof results.firstDay === 'string' ? results.firstDay : null,
+          lastDay: typeof results.lastDay === 'string' ? results.lastDay : null,
+          reachCategory: typeof results.reachCategory === 'string' ? results.reachCategory : 'low',
+          reachColor: typeof results.reachColor === 'string' ? results.reachColor : 'text-gray-500',
+          chartData: Array.isArray(results.chartData) ? results.chartData : [], // Include saved chart data
+        };
+      } else {
+        // Fallback for analyses without saved results (shouldn't happen with new system)
+        return {
+          id: analysis.id,
+          url: analysis.url,
+          status: analysis.status,
+          createdAt: analysis.createdAt,
+          updatedAt: analysis.updatedAt,
+          totalReach: 0,
+          adCount: 0,
+          avgReachPerDay: 0,
+          totalDays: 0,
+          firstDay: null,
+          lastDay: null,
+          reachCategory: 'low',
+          reachColor: 'text-gray-500',
+          chartData: [],
+        };
+      }
+    });
 
     // Apply reach filter
     let filteredAnalyses = analysesWithReach;
@@ -245,7 +187,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const totalPages = Math.ceil(totalCount / limit);
+    const totalPages = Math.ceil(totalUniqueCount / limit);
 
     return NextResponse.json({
       success: true,
@@ -253,7 +195,7 @@ export async function GET(request: NextRequest) {
       pagination: {
         currentPage: page,
         totalPages,
-        totalCount,
+        totalCount: totalUniqueCount,
         hasNext: page < totalPages,
         hasPrev: page > 1,
       },
