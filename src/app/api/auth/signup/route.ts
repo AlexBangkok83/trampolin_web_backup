@@ -8,9 +8,9 @@ const prisma = new PrismaClient();
 // Plan mapping for limits with fallback validation
 const getPlanLimits = () => {
   const limits = {
-    bronze: { priceId: process.env.BRONZE_MONTHLY_PRICE, limit: 500 },
-    silver: { priceId: process.env.SILVER_MONTHLY_PRICE, limit: 1000 },
-    gold: { priceId: process.env.GOLD_MONTHLY_PRICE, limit: 2500 },
+    bronze: { priceId: process.env.BRONZE_MONTHLY_PRICE || '', limit: 500 },
+    silver: { priceId: process.env.SILVER_MONTHLY_PRICE || '', limit: 1000 },
+    gold: { priceId: process.env.GOLD_MONTHLY_PRICE || '', limit: 2500 },
   };
 
   // Validate all price IDs are available
