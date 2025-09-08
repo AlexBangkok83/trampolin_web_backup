@@ -8,7 +8,8 @@ import ThumbnailChart from '@/components/charts/ThumbnailChart';
 
 interface HistoryItem {
   id: string;
-  url: string;
+  url: string; // Primary URL for display
+  urls?: string[]; // All URLs in the search
   status: string;
   createdAt: string;
   totalReach: number;
@@ -21,6 +22,8 @@ interface HistoryItem {
   reachColor: string;
   isFavorited?: boolean;
   chartData?: Array<{ date: string; reach: number }>;
+  isBatchAnalysis?: boolean;
+  batchSize?: number;
 }
 
 interface PaginationData {
@@ -368,10 +371,34 @@ export default function History() {
                     <tr key={item.id}>
                       <td className="whitespace-nowrap px-6 py-4">
                         <div>
-                          <div className="text-sm font-medium capitalize text-gray-900 dark:text-white">
-                            {displayName}
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium capitalize text-gray-900 dark:text-white">
+                              {item.isBatchAnalysis && item.batchSize && item.batchSize > 1
+                                ? `Search with ${item.batchSize} URLs`
+                                : displayName}
+                            </div>
+                            {item.isBatchAnalysis && item.batchSize && item.batchSize > 1 && (
+                              <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                {item.batchSize} URLs
+                              </span>
+                            )}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">{item.url}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {item.isBatchAnalysis && item.urls && item.urls.length > 1 ? (
+                              <div className="space-y-1">
+                                {item.urls.slice(0, 3).map((url, index) => (
+                                  <div key={index}>{url}</div>
+                                ))}
+                                {item.urls.length > 3 && (
+                                  <div className="text-xs text-gray-400">
+                                    ... and {item.urls.length - 3} more
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              item.url
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">

@@ -25,42 +25,90 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id: analysisId } = await params;
 
-    // Find analysis by URL hash-based ID from user's analyses
-    const dbAnalyses = await prisma.urlAnalysis.findMany({
+    // Hybrid approach: Check both Search records (new) and UrlAnalysis records (legacy)
+    // First, get all user's Search records
+    const dbSearches = await prisma.search.findMany({
       where: {
         userId: user.id,
         status: 'completed',
+      },
+      include: {
+        urlAnalyses: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    // Also get standalone UrlAnalysis records (legacy)
+    const legacyAnalyses = await prisma.urlAnalysis.findMany({
+      where: {
+        userId: user.id,
+        status: 'completed',
+        searchId: null, // Only get analyses not linked to a search
       },
       orderBy: { updatedAt: 'desc' },
     });
 
     // Find the analysis by matching the hash ID
-    let matchingAnalysis = null;
-    for (const analysis of dbAnalyses) {
-      const hashId = generateAnalysisId(analysis.url);
-      if (hashId === analysisId) {
-        matchingAnalysis = analysis;
-        break;
+    let matchingResults = null;
+    let matchingUrl = null;
+    let matchingDate = null;
+
+    // Check Search records first (new system)
+    for (const search of dbSearches) {
+      for (const analysis of search.urlAnalyses) {
+        const hashId = generateAnalysisId(analysis.url);
+        if (hashId === analysisId) {
+          // Use the matching analysis's results, or fall back to the matching analysis
+          if (
+            analysis.results &&
+            Object.keys(analysis.results as Record<string, unknown>).length > 0
+          ) {
+            matchingResults = analysis.results as Record<string, unknown>;
+          } else {
+            // If the specific analysis doesn't have results, use the primary analysis from the search
+            const primaryAnalysis = search.urlAnalyses[0];
+            if (primaryAnalysis && primaryAnalysis.results) {
+              matchingResults = primaryAnalysis.results as Record<string, unknown>;
+            }
+          }
+          matchingUrl = analysis.url;
+          matchingDate = search.updatedAt;
+          break;
+        }
+      }
+      if (matchingResults) break;
+    }
+
+    // If not found in Search records, check legacy UrlAnalysis records
+    if (!matchingResults) {
+      for (const analysis of legacyAnalyses) {
+        const hashId = generateAnalysisId(analysis.url);
+        if (hashId === analysisId) {
+          matchingResults = analysis.results as Record<string, unknown>;
+          matchingUrl = analysis.url;
+          matchingDate = analysis.updatedAt;
+          break;
+        }
       }
     }
 
-    if (!matchingAnalysis) {
+    if (!matchingResults || !matchingUrl) {
       return NextResponse.json({ error: 'Analysis not found' }, { status: 404 });
     }
 
     // Get saved analysis results (no live database queries)
-    const results = matchingAnalysis.results as Record<string, unknown>;
+    const results = matchingResults;
 
     let analysisResult;
     if (results && typeof results === 'object') {
       // Use saved data from the analysis
       analysisResult = {
         id: analysisId,
-        url: matchingAnalysis.url,
-        status: matchingAnalysis.status,
-        createdAt: matchingAnalysis.createdAt,
-        firstAnalyzedAt: matchingAnalysis.createdAt,
-        lastUpdatedAt: matchingAnalysis.updatedAt,
+        url: matchingUrl,
+        status: 'completed',
+        createdAt: matchingDate,
+        firstAnalyzedAt: matchingDate,
+        lastUpdatedAt: matchingDate,
         totalReach: typeof results.totalReach === 'number' ? results.totalReach : 0,
         adCount: typeof results.adCount === 'number' ? results.adCount : 0,
         avgReachPerDay: typeof results.avgReachPerDay === 'number' ? results.avgReachPerDay : 0,
@@ -75,11 +123,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       // Fallback for analyses without saved results (shouldn't happen with new system)
       analysisResult = {
         id: analysisId,
-        url: matchingAnalysis.url,
-        status: matchingAnalysis.status,
-        createdAt: matchingAnalysis.createdAt,
-        firstAnalyzedAt: matchingAnalysis.createdAt,
-        lastUpdatedAt: matchingAnalysis.updatedAt,
+        url: matchingUrl,
+        status: 'completed',
+        createdAt: matchingDate,
+        firstAnalyzedAt: matchingDate,
+        lastUpdatedAt: matchingDate,
         totalReach: 0,
         adCount: 0,
         avgReachPerDay: 0,

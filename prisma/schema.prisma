@@ -24,6 +24,7 @@ model User {
   sessions         Session[]
   subscriptions    Subscription[]
   urlAnalyses      UrlAnalysis[]
+  searches         Search[]
   role             Role?          @relation(fields: [roleId], references: [id])
 }
 
@@ -115,9 +116,23 @@ model UrlAnalysis {
   url       String
   status    String
   results   Json?
+  searchId  String?  // Link to batch search
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  search    Search?  @relation(fields: [searchId], references: [id], onDelete: SetNull)
+}
+
+model Search {
+  id          String        @id @default(cuid())
+  userId      String
+  status      String        // pending, completed, failed
+  urlCount    Int           // Number of URLs in this search
+  totalReach  Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  urlAnalyses UrlAnalysis[]
 }
 
 model CsvUpload {

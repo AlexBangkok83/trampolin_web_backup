@@ -9,7 +9,10 @@ const pool = new Pool({
     (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.includes('sslmode')
       ? '?sslmode=require'
       : ''),
-  ssl: false,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: false } // Accept self-signed certificates in production
+      : false, // No SSL in development
 });
 
 /**

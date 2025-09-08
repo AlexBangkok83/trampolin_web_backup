@@ -6,6 +6,8 @@ import { PaywallBlur, usePaywallCheck } from '@/components/paywall/PaywallBlur';
 import ReachChart from '@/components/charts/ReachChart';
 import { normalizeUrl } from '@/utils/urlUtils';
 import { getSubscriptionWithCache, clearSubscriptionCache } from '@/utils/subscriptionCache';
+import { generateAnalysisId } from '@/utils/reachUtils';
+import { Star } from 'lucide-react';
 
 interface UserSubscription {
   id: string;
@@ -47,6 +49,17 @@ export default function Analyze() {
   const [chartLoading, setChartLoading] = useState(false);
   const [examples, setExamples] = useState<PopularExample[]>([]);
   const [examplesLoading, setExamplesLoading] = useState(true);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  // Load favorites from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedFavorites = localStorage.getItem('favoritedProducts');
+      if (savedFavorites) {
+        setFavorites(new Set(JSON.parse(savedFavorites)));
+      }
+    }
+  }, []);
 
   // Use cached subscription data with 24-hour cache
   useEffect(() => {
@@ -83,6 +96,21 @@ export default function Analyze() {
       console.error('Failed to fetch examples:', error);
     } finally {
       setExamplesLoading(false);
+    }
+  };
+
+  // Toggle favorite status
+  const toggleFavorite = (url: string) => {
+    const analysisId = generateAnalysisId(url);
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(analysisId)) {
+      newFavorites.delete(analysisId);
+    } else {
+      newFavorites.add(analysisId);
+    }
+    setFavorites(newFavorites);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('favoritedProducts', JSON.stringify([...newFavorites]));
     }
   };
 
@@ -393,13 +421,38 @@ export default function Analyze() {
                         </span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                        Analysis Ready
+                    <div className="flex items-center space-x-3">
+                      <div className="text-right">
+                        <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+                          Analysis Ready
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Facebook Ads Data
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        Facebook Ads Data
-                      </div>
+                      <button
+                        onClick={() => toggleFavorite((result as { url?: string }).url || '')}
+                        className={`rounded-full p-1 transition-colors ${
+                          favorites.has(generateAnalysisId((result as { url?: string }).url || ''))
+                            ? 'text-yellow-500 hover:text-yellow-600'
+                            : 'text-gray-400 hover:text-yellow-500'
+                        }`}
+                        title={
+                          favorites.has(generateAnalysisId((result as { url?: string }).url || ''))
+                            ? 'Remove from favorites'
+                            : 'Add to favorites'
+                        }
+                      >
+                        <Star
+                          className={`h-4 w-4 ${
+                            favorites.has(
+                              generateAnalysisId((result as { url?: string }).url || ''),
+                            )
+                              ? 'fill-current'
+                              : ''
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
                 ))}

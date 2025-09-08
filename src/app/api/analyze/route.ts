@@ -104,7 +104,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 403 });
     }
 
-    // Create or update URL analysis records
+    // Create a Search record for this batch (even if single URL)
+    const search = await prisma.search.create({
+      data: {
+        userId: user.id,
+        status: 'pending',
+        urlCount: validUrls.length,
+      },
+    });
+
+    console.log('🔍 Created search record:', search.id, 'for', validUrls.length, 'URLs');
+
+    // Create or update URL analysis records linked to this search
     const analysisPromises = validUrls.map(async (url) => {
       // Normalize URL before saving to database (Facebook redirects, www cleanup, etc.)
       const cleanUrl = normalizeUrl(url);
@@ -119,22 +130,24 @@ export async function POST(request: NextRequest) {
       });
 
       if (existingAnalysis) {
-        // Update existing analysis - this will update the updatedAt timestamp automatically
+        // Update existing analysis - link to new search and reset status
         return prisma.urlAnalysis.update({
           where: { id: existingAnalysis.id },
           data: {
             status: 'pending',
+            searchId: search.id, // Link to the batch search
             // Clear previous results to indicate fresh analysis
             results: undefined,
           },
         });
       } else {
-        // Create new analysis
+        // Create new analysis linked to search
         return prisma.urlAnalysis.create({
           data: {
             userId: user.id,
             url: cleanUrl,
             status: 'pending',
+            searchId: search.id, // Link to the batch search
           },
         });
       }
@@ -142,34 +155,53 @@ export async function POST(request: NextRequest) {
 
     const analyses = await Promise.all(analysisPromises);
 
-    // Deduct credits for ALL analyses (including re-analyses)
-    const totalAnalysesCount = analyses.length;
+    // First, check which URLs actually have data before charging credits
+    const dataCheckPromises = analyses.map(async (analysis) => {
+      const totalReach = await getTotalReachForUrl(analysis.url);
+      return { analysis, hasData: totalReach > 0, totalReach };
+    });
 
-    console.log('🔍 Credit deduction debug:', {
-      totalAnalyses: totalAnalysesCount,
+    const dataCheckResults = await Promise.all(dataCheckPromises);
+    const urlsWithData = dataCheckResults.filter((result) => result.hasData);
+    const urlsWithoutData = dataCheckResults.filter((result) => !result.hasData);
+
+    // Only charge credits for URLs that have data
+    const creditsToCharge = urlsWithData.length;
+
+    console.log('🔍 Credit charging analysis:', {
+      totalAnalyses: analyses.length,
+      urlsWithData: urlsWithData.length,
+      urlsWithoutData: urlsWithoutData.length,
+      creditsToCharge,
       isTrialing,
       previousUsed: isTrialing ? subscription.trialUsed : subscription.usedThisMonth,
-      willDeduct: totalAnalysesCount,
     });
 
-    // Update subscription usage for ALL analyses (trial or monthly)
-    const updateData = isTrialing
-      ? { trialUsed: subscription.trialUsed + totalAnalysesCount }
-      : { usedThisMonth: subscription.usedThisMonth + totalAnalysesCount };
+    // Update subscription usage only for URLs with data
+    if (creditsToCharge > 0) {
+      const updateData = isTrialing
+        ? { trialUsed: subscription.trialUsed + creditsToCharge }
+        : { usedThisMonth: subscription.usedThisMonth + creditsToCharge };
 
-    await prisma.subscription.update({
-      where: { id: subscription.id },
-      data: updateData,
-    });
-    console.log('✅ Credits deducted:', totalAnalysesCount);
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: updateData,
+      });
+      console.log(
+        '✅ Credits charged:',
+        creditsToCharge,
+        '(',
+        urlsWithoutData.length,
+        'URLs had no data - no charge)',
+      );
+    } else {
+      console.log('ℹ️ No credits charged - all URLs returned no data');
+    }
 
-    // Real Facebook Ads analysis with saved data
-    const completionPromises = analyses.map(async (analysis) => {
-      console.log('🎆 Analyzing URL:', analysis.url);
-      // Get real reach data from ads database
-      const totalReach = await getTotalReachForUrl(analysis.url);
+    // Process analysis results using the already-fetched data
+    const completionPromises = dataCheckResults.map(async ({ analysis, totalReach }) => {
+      console.log('🎆 Processing analysis for:', analysis.url, '- Total reach:', totalReach);
       const { category: reachCategory, color: reachColor } = getReachCategory(totalReach);
-      console.log('🎆 Analysis result for', analysis.url, '- Total reach:', totalReach);
 
       // Get historical chart data
       const historicalData = await getHistoricalReachForAnalysis(analysis.url);
@@ -223,7 +255,27 @@ export async function POST(request: NextRequest) {
 
     await Promise.all(completionPromises);
 
-    const message = `Successfully analyzed ${totalAnalysesCount} URL${totalAnalysesCount !== 1 ? 's' : ''}. ${totalAnalysesCount} credit${totalAnalysesCount !== 1 ? 's' : ''} deducted.`;
+    // Update the search record with total reach and completion status
+    const totalSearchReach = dataCheckResults.reduce((sum, result) => sum + result.totalReach, 0);
+    await prisma.search.update({
+      where: { id: search.id },
+      data: {
+        status: 'completed',
+        totalReach: totalSearchReach,
+      },
+    });
+
+    console.log('\ud83c\udf86 Search completed:', search.id, 'with total reach:', totalSearchReach);
+
+    const totalAnalysesCount = analyses.length;
+    let message;
+    if (creditsToCharge === totalAnalysesCount) {
+      message = `Successfully analyzed ${totalAnalysesCount} URL${totalAnalysesCount !== 1 ? 's' : ''}. ${creditsToCharge} credit${creditsToCharge !== 1 ? 's' : ''} deducted.`;
+    } else if (creditsToCharge === 0) {
+      message = `Analyzed ${totalAnalysesCount} URL${totalAnalysesCount !== 1 ? 's' : ''} - no data found, no credits charged.`;
+    } else {
+      message = `Analyzed ${totalAnalysesCount} URL${totalAnalysesCount !== 1 ? 's' : ''} - ${creditsToCharge} with data (charged), ${urlsWithoutData.length} with no data (free).`;
+    }
 
     return NextResponse.json({
       success: true,
@@ -233,12 +285,18 @@ export async function POST(request: NextRequest) {
         url: a.url,
         status: a.status,
       })),
+      dataBreakdown: {
+        totalAnalyzed: totalAnalysesCount,
+        withData: urlsWithData.length,
+        withoutData: urlsWithoutData.length,
+        creditsCharged: creditsToCharge,
+      },
       usage: {
         used: isTrialing
-          ? subscription.trialUsed + totalAnalysesCount
-          : subscription.usedThisMonth + totalAnalysesCount,
+          ? subscription.trialUsed + creditsToCharge
+          : subscription.usedThisMonth + creditsToCharge,
         limit: isTrialing ? subscription.trialLimit : currentLimit,
-        remaining: remaining - totalAnalysesCount,
+        remaining: remaining - creditsToCharge,
         type: limitType,
         isTrialing: isTrialing,
       },

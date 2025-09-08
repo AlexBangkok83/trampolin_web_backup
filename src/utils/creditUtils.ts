@@ -10,17 +10,21 @@ export interface CreditInfo {
  * Get current credit information from localStorage
  */
 export function getCurrentCredits(): CreditInfo {
-  const stored = localStorage.getItem('userCredits');
-  if (stored) {
-    return JSON.parse(stored);
-  }
-
   // Default credits for new users
   const defaultCredits = {
     available: 50,
     used: 0,
     total: 50,
   };
+
+  if (typeof window === 'undefined') {
+    return defaultCredits;
+  }
+
+  const stored = localStorage.getItem('userCredits');
+  if (stored) {
+    return JSON.parse(stored);
+  }
 
   localStorage.setItem('userCredits', JSON.stringify(defaultCredits));
   return defaultCredits;
@@ -30,6 +34,10 @@ export function getCurrentCredits(): CreditInfo {
  * Deduct credits for analysis operations
  */
 export function deductCredits(amount: number): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
   const credits = getCurrentCredits();
 
   if (credits.available < amount) {
@@ -73,6 +81,10 @@ export function getCreditCost(
  * Add credits (for testing or admin purposes)
  */
 export function addCredits(amount: number): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
   const credits = getCurrentCredits();
   const updatedCredits = {
     ...credits,

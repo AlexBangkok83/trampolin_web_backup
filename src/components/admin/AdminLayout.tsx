@@ -24,7 +24,7 @@ const navigation = [
   { name: 'Customers', href: '/dashboard/admin/users', icon: UsersIcon },
   { name: 'Subscriptions', href: '/dashboard/admin/subscriptions', icon: CreditCardIcon },
   { name: 'Emails', href: '/dashboard/admin/emails', icon: EnvelopeIcon },
-  { name: 'URL Analytics', href: '/dashboard/admin/data/url-analyses', icon: GlobeAltIcon },
+  { name: 'Search Statistics', href: '/dashboard/admin/data/url-analyses', icon: GlobeAltIcon },
   { name: 'System', href: '/dashboard/admin/system', icon: CogIcon },
   { name: 'Support', href: '/dashboard/admin/support', icon: LifebuoyIcon },
 ];
