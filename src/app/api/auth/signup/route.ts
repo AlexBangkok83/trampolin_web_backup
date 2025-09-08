@@ -5,12 +5,24 @@ import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
 
-// Plan mapping for limits
-const getPlanLimits = () => ({
-  bronze: { priceId: process.env.BRONZE_MONTHLY_PRICE!, limit: 500 },
-  silver: { priceId: process.env.SILVER_MONTHLY_PRICE!, limit: 1000 },
-  gold: { priceId: process.env.GOLD_MONTHLY_PRICE!, limit: 2500 },
-});
+// Plan mapping for limits with fallback validation
+const getPlanLimits = () => {
+  const limits = {
+    bronze: { priceId: process.env.BRONZE_MONTHLY_PRICE, limit: 500 },
+    silver: { priceId: process.env.SILVER_MONTHLY_PRICE, limit: 1000 },
+    gold: { priceId: process.env.GOLD_MONTHLY_PRICE, limit: 2500 },
+  };
+
+  // Validate all price IDs are available
+  for (const [plan, config] of Object.entries(limits)) {
+    if (!config.priceId) {
+      console.error(`Missing environment variable for ${plan.toUpperCase()}_MONTHLY_PRICE`);
+      throw new Error(`Plan configuration missing for ${plan}`);
+    }
+  }
+
+  return limits;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -124,8 +136,27 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Signup error:', error);
 
-    // Handle specific Stripe errors
+    // Log additional context for debugging
+    console.error('Environment check:', {
+      hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+      hasBronzePrice: !!process.env.BRONZE_MONTHLY_PRICE,
+      hasSilverPrice: !!process.env.SILVER_MONTHLY_PRICE,
+      hasGoldPrice: !!process.env.GOLD_MONTHLY_PRICE,
+      hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
+    });
+
+    // Handle specific errors
     if (error instanceof Error) {
+      if (error.message.includes('Plan configuration missing')) {
+        return NextResponse.json(
+          {
+            error: 'Service configuration error. Please contact support.',
+            details: error.message,
+          },
+          { status: 500 },
+        );
+      }
+
       if (error.message.includes('No such price')) {
         return NextResponse.json(
           {
