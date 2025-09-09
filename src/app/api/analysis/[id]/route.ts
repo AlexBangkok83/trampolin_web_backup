@@ -25,6 +25,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const { id: analysisId } = await params;
 
+    // DEBUG: Log the analysis request
+    console.log(`[DEBUG] Analysis API called for ID: ${analysisId}, User: ${user.email}`);
+
     // Hybrid approach: Check both Search records (new) and UrlAnalysis records (legacy)
     // First, get all user's Search records
     const dbSearches = await prisma.search.findMany({
@@ -47,6 +50,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       },
       orderBy: { updatedAt: 'desc' },
     });
+
+    // DEBUG: Log query results
+    console.log(`[DEBUG] Found ${dbSearches.length} search records`);
+    console.log(`[DEBUG] Found ${legacyAnalyses.length} legacy analysis records`);
+    for (const search of dbSearches) {
+      console.log(
+        `[DEBUG] Search ${search.id}: ${search.urlAnalyses.length} analyses, status: ${search.status}`,
+      );
+    }
 
     // Find the analysis by matching the hash ID
     let matchingResults = null;
@@ -92,7 +104,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }
     }
 
+    // DEBUG: Log the search results
+    console.log(`[DEBUG] Analysis ID ${analysisId} search results:`);
+    console.log(`[DEBUG] - matchingResults: ${matchingResults ? 'found' : 'null'}`);
+    console.log(`[DEBUG] - matchingUrl: ${matchingUrl || 'null'}`);
+    if (matchingResults) {
+      console.log(
+        `[DEBUG] - totalReach in results: ${typeof matchingResults === 'object' ? (matchingResults as Record<string, unknown>).totalReach : 'not object'}`,
+      );
+    }
+
     if (!matchingResults || !matchingUrl) {
+      console.log(`[DEBUG] Analysis not found - returning 404`);
       return NextResponse.json({ error: 'Analysis not found' }, { status: 404 });
     }
 

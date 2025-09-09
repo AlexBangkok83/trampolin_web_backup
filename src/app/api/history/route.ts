@@ -137,6 +137,20 @@ export async function GET(request: NextRequest) {
       userEmail: user.email,
     });
 
+    // DEBUG: Check what data we have
+    if (dbSearches.length > 0) {
+      const firstSearch = dbSearches[0];
+      console.log('🔍 First search example:', {
+        id: firstSearch.id,
+        totalReach: firstSearch.totalReach,
+        urlAnalysesCount: firstSearch.urlAnalyses.length,
+        firstAnalysisHasResults: !!firstSearch.urlAnalyses[0]?.results,
+        firstAnalysisResults: firstSearch.urlAnalyses[0]?.results
+          ? Object.keys(firstSearch.urlAnalyses[0].results as Record<string, unknown>)
+          : 'no results',
+      });
+    }
+
     // Convert both Search records and legacy UrlAnalysis records to history format
     const validAnalyses = paginatedItems.map((item) => {
       if (item.type === 'search') {
@@ -183,6 +197,17 @@ export async function GET(request: NextRequest) {
       const totalReach = searchItem.totalReach || 0;
 
       if (results && typeof results === 'object') {
+        // DEBUG: Check chartData
+        const hasChartData = Array.isArray(results.chartData);
+        const chartDataLength = hasChartData ? (results.chartData as unknown[]).length : 0;
+
+        console.log(`🔍 Analysis ${searchItem.id} chartData:`, {
+          hasChartData,
+          chartDataLength,
+          totalReach,
+          resultsKeys: Object.keys(results),
+        });
+
         // Use saved data from the primary analysis
         return {
           id: searchItem.id, // Search ID
