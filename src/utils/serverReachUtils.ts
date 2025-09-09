@@ -4,15 +4,16 @@ const { Pool } = pg;
 
 // Database connection for ads data
 const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL +
-    (process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL?.includes('sslmode')
-      ? '?sslmode=require'
-      : ''),
+  connectionString: process.env.DATABASE_URL,
   ssl:
-    process.env.NODE_ENV === 'production'
-      ? { rejectUnauthorized: false } // Accept self-signed certificates in production
-      : false, // No SSL in development
+    process.env.NODE_ENV === 'production' && process.env.DATABASE_CA_CERT
+      ? {
+          ca: process.env.DATABASE_CA_CERT,
+          rejectUnauthorized: true,
+        }
+      : process.env.NODE_ENV === 'production'
+        ? { rejectUnauthorized: false }
+        : false,
 });
 
 /**

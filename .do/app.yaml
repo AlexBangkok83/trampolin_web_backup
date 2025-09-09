@@ -1,24 +1,18 @@
 name: trampolin-web
-static_sites:
+services:
   - name: web
     github:
       repo: BrightOnAnalytics/trampolin-web
       branch: main
       deploy_on_push: true
 
-    # Build command for static export
+    # Build command
     build_command: |
       npm ci
       npm run build
 
-      # Create output directory if it doesn't exist
-      mkdir -p out
-
-      # Copy static files
-      cp -r public/. out/
-
-    # Output directory for static files
-    output_dir: out
+    # Run command for Next.js production server
+    run_command: npm start
 
     # Environment variables
     envs:
@@ -30,16 +24,17 @@ static_sites:
         value: ${STRIPE_SECRET_KEY}
       - key: DATABASE_URL
         value: ${DATABASE_URL}
+      - key: DATABASE_CA_CERT
+        value: ${DATABASE_CA_CERT}
 
     # HTTP settings
-    http_port: 8080
+    http_port: 3000
 
     # Health check
     health_check:
-      http_path: /
+      http_path: /api/health
       initial_delay_seconds: 30
 
-    # Error pages (optional)
-    error_pages:
-      - code: 404
-        file: 404.html
+    # Instance configuration
+    instance_count: 1
+    instance_size_slug: basic-xxs
