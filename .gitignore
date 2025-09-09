@@ -29,7 +29,6 @@ documents
 
 # Tool-specific directories
 .claude/
-.do/
 .swc/
 
 # debug
@@ -61,3 +60,4 @@ logs
 *.sln
 *.sw?
 /src/generated/prisma
+/docs/*.csv
