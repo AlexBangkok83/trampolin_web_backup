@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
+        role: true,
         subscriptions: {
           where: { status: { in: ['active', 'trialing'] } },
           orderBy: { createdAt: 'desc' },
@@ -66,42 +67,54 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!user || user.subscriptions.length === 0) {
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Admin users bypass subscription checks
+    const isAdmin = user.role?.name === 'admin';
+
+    if (!isAdmin && user.subscriptions.length === 0) {
       return NextResponse.json({ error: 'No active subscription found' }, { status: 403 });
     }
 
-    const subscription = user.subscriptions[0];
+    const subscription = isAdmin ? null : user.subscriptions[0];
 
-    // Update monthly limit based on current price ID
-    const currentLimit = PLAN_LIMITS[subscription.priceId as keyof typeof PLAN_LIMITS] || 500;
-    if (subscription.monthlyLimit !== currentLimit) {
-      await prisma.subscription.update({
-        where: { id: subscription.id },
-        data: { monthlyLimit: currentLimit },
-      });
-    }
+    let currentLimit = 500;
+    let isTrialing = false;
+    let remaining = Infinity;
+    let limitType = 'unlimited';
 
-    // Check usage limits based on trial status
-    const urlCount = validUrls.length;
-    const isTrialing = subscription.status === 'trialing';
+    // Only check subscription limits for non-admin users
+    if (!isAdmin && subscription) {
+      // Update monthly limit based on current price ID
+      currentLimit = PLAN_LIMITS[subscription.priceId as keyof typeof PLAN_LIMITS] || 500;
+      if (subscription.monthlyLimit !== currentLimit) {
+        await prisma.subscription.update({
+          where: { id: subscription.id },
+          data: { monthlyLimit: currentLimit },
+        });
+      }
 
-    let remaining: number;
-    let limitType: string;
+      // Check usage limits based on trial status
+      const urlCount = validUrls.length;
+      isTrialing = subscription.status === 'trialing';
 
-    if (isTrialing) {
-      remaining = subscription.trialLimit - subscription.trialUsed;
-      limitType = 'trial';
-    } else {
-      remaining = currentLimit - subscription.usedThisMonth;
-      limitType = 'monthly';
-    }
+      if (isTrialing) {
+        remaining = subscription.trialLimit - subscription.trialUsed;
+        limitType = 'trial';
+      } else {
+        remaining = currentLimit - subscription.usedThisMonth;
+        limitType = 'monthly';
+      }
 
-    if (urlCount > remaining) {
-      const message = isTrialing
-        ? `Trial limit exceeded. You need ${urlCount} analyses but only have ${remaining} left in your trial. Please upgrade to continue.`
-        : `Monthly limit exceeded. You need ${urlCount} analyses but only have ${remaining} left this month.`;
+      if (urlCount > remaining) {
+        const message = isTrialing
+          ? `Trial limit exceeded. You need ${urlCount} analyses but only have ${remaining} left in your trial. Please upgrade to continue.`
+          : `Monthly limit exceeded. You need ${urlCount} analyses but only have ${remaining} left this month.`;
 
-      return NextResponse.json({ error: message }, { status: 403 });
+        return NextResponse.json({ error: message }, { status: 403 });
+      }
     }
 
     // Create a Search record for this batch (even if single URL)
@@ -165,20 +178,25 @@ export async function POST(request: NextRequest) {
     const urlsWithData = dataCheckResults.filter((result) => result.hasData);
     const urlsWithoutData = dataCheckResults.filter((result) => !result.hasData);
 
-    // Only charge credits for URLs that have data
-    const creditsToCharge = urlsWithData.length;
+    // Only charge credits for URLs that have data (and only for non-admin users)
+    const creditsToCharge = isAdmin ? 0 : urlsWithData.length;
 
     console.log('🔍 Credit charging analysis:', {
       totalAnalyses: analyses.length,
       urlsWithData: urlsWithData.length,
       urlsWithoutData: urlsWithoutData.length,
       creditsToCharge,
+      isAdmin,
       isTrialing,
-      previousUsed: isTrialing ? subscription.trialUsed : subscription.usedThisMonth,
+      previousUsed: isAdmin
+        ? 'N/A (admin)'
+        : isTrialing
+          ? subscription?.trialUsed
+          : subscription?.usedThisMonth,
     });
 
-    // Update subscription usage only for URLs with data
-    if (creditsToCharge > 0) {
+    // Update subscription usage only for URLs with data (skip for admin users)
+    if (!isAdmin && creditsToCharge > 0 && subscription) {
       const updateData = isTrialing
         ? { trialUsed: subscription.trialUsed + creditsToCharge }
         : { usedThisMonth: subscription.usedThisMonth + creditsToCharge };
@@ -194,6 +212,8 @@ export async function POST(request: NextRequest) {
         urlsWithoutData.length,
         'URLs had no data - no charge)',
       );
+    } else if (isAdmin) {
+      console.log('👑 Admin user - no credits charged');
     } else {
       console.log('ℹ️ No credits charged - all URLs returned no data');
     }
@@ -269,7 +289,9 @@ export async function POST(request: NextRequest) {
 
     const totalAnalysesCount = analyses.length;
     let message;
-    if (creditsToCharge === totalAnalysesCount) {
+    if (isAdmin) {
+      message = `Successfully analyzed ${totalAnalysesCount} URL${totalAnalysesCount !== 1 ? 's' : ''} (admin - no credits charged).`;
+    } else if (creditsToCharge === totalAnalysesCount) {
       message = `Successfully analyzed ${totalAnalysesCount} URL${totalAnalysesCount !== 1 ? 's' : ''}. ${creditsToCharge} credit${creditsToCharge !== 1 ? 's' : ''} deducted.`;
     } else if (creditsToCharge === 0) {
       message = `Analyzed ${totalAnalysesCount} URL${totalAnalysesCount !== 1 ? 's' : ''} - no data found, no credits charged.`;
@@ -291,15 +313,23 @@ export async function POST(request: NextRequest) {
         withoutData: urlsWithoutData.length,
         creditsCharged: creditsToCharge,
       },
-      usage: {
-        used: isTrialing
-          ? subscription.trialUsed + creditsToCharge
-          : subscription.usedThisMonth + creditsToCharge,
-        limit: isTrialing ? subscription.trialLimit : currentLimit,
-        remaining: remaining - creditsToCharge,
-        type: limitType,
-        isTrialing: isTrialing,
-      },
+      usage: isAdmin
+        ? {
+            used: 0,
+            limit: Infinity,
+            remaining: Infinity,
+            type: 'admin',
+            isTrialing: false,
+          }
+        : {
+            used: isTrialing
+              ? (subscription?.trialUsed || 0) + creditsToCharge
+              : (subscription?.usedThisMonth || 0) + creditsToCharge,
+            limit: isTrialing ? subscription?.trialLimit || 0 : currentLimit,
+            remaining: remaining - creditsToCharge,
+            type: limitType,
+            isTrialing: isTrialing,
+          },
     });
   } catch (error) {
     console.error('Error analyzing URLs:', error);
