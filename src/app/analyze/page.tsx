@@ -137,8 +137,8 @@ export default function Analyze() {
 
     const urlCount = normalizedUrlList.length;
 
-    // Check usage limits (trial or monthly)
-    if (subscription) {
+    // Check usage limits (trial or monthly) - skip for admin users
+    if (subscription && userRole !== 'admin') {
       const remaining = subscription.activeRemaining;
       if (urlCount > remaining) {
         const limitType = subscription.isTrialing ? 'trial' : 'monthly';
@@ -213,14 +213,18 @@ export default function Analyze() {
     }
   };
 
-  const remaining = subscription ? subscription.activeRemaining : 0;
+  // Check if content should be blocked
+  const userRole = (session?.user as { role?: string })?.role;
+  const remaining = subscription
+    ? subscription.activeRemaining
+    : userRole === 'admin'
+      ? Infinity
+      : 0;
   const urlCount = urls
     .trim()
     .split('\n')
     .filter((url) => url.trim()).length;
-
-  // Check if content should be blocked
-  const { isBlocked, reason, usageInfo } = usePaywallCheck(subscription);
+  const { isBlocked, reason, usageInfo } = usePaywallCheck(subscription, userRole);
   const planName =
     subscription?.activeLimit === 2500
       ? 'Gold'
@@ -300,7 +304,26 @@ export default function Analyze() {
             </div>
 
             {/* Usage Progress */}
-            {subscription && !loading && (
+            {userRole === 'admin' ? (
+              <div className="mb-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Admin Access
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Unlimited</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                  <div
+                    className="h-full bg-green-600 transition-all duration-300"
+                    style={{ width: '100%' }}
+                  ></div>
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Unlimited searches available
+                  <span className="ml-2 text-green-600 dark:text-green-400">(Admin)</span>
+                </p>
+              </div>
+            ) : subscription && !loading ? (
               <div className="mb-6">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -325,12 +348,17 @@ export default function Analyze() {
                   )}
                 </p>
               </div>
-            )}
+            ) : null}
 
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 {loading && <span>Loading subscription...</span>}
-                {!subscription && !loading && (
+                {userRole === 'admin' && (
+                  <span className="text-green-600 dark:text-green-400">
+                    Admin access - unlimited searches
+                  </span>
+                )}
+                {!subscription && !loading && userRole !== 'admin' && (
                   <span className="text-red-600 dark:text-red-400">
                     No active subscription found
                   </span>
@@ -338,7 +366,11 @@ export default function Analyze() {
               </div>
               <button
                 type="submit"
-                disabled={isAnalyzing || !urls.trim() || urlCount > remaining || !subscription}
+                disabled={
+                  isAnalyzing ||
+                  !urls.trim() ||
+                  (userRole !== 'admin' && (urlCount > remaining || !subscription))
+                }
                 className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-offset-gray-800 dark:disabled:bg-gray-600"
               >
                 {isAnalyzing ? 'Analyzing...' : 'Analyze URLs'}
