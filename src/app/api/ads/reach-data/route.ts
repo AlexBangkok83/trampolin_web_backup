@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         const result = await prisma.$queryRaw`
           WITH base AS (
             SELECT
-              id,
+              _id,
               created_at::date AS day,
               eu_total_reach,
               snapshot_link_url
@@ -42,36 +42,36 @@ export async function POST(request: NextRequest) {
           ),
           daily_snapshots AS (
             SELECT
-              id,
+              _id,
               day,
               MAX(eu_total_reach) AS eu_total_reach,
               snapshot_link_url
             FROM base
-            GROUP BY id, day, snapshot_link_url
+            GROUP BY _id, day, snapshot_link_url
           ),
           ad_series AS (
             SELECT
-              id,
+              _id,
               generate_series(MIN(day), current_date, '1 day') AS day,
               snapshot_link_url
             FROM daily_snapshots
-            GROUP BY id, snapshot_link_url
+            GROUP BY _id, snapshot_link_url
           ),
           ad_daily AS (
             SELECT
-              s.id,
+              s._id,
               s.day,
               ds.eu_total_reach,
               s.snapshot_link_url
             FROM ad_series s
-            LEFT JOIN daily_snapshots ds ON s.id = ds.id AND s.day = ds.day
+            LEFT JOIN daily_snapshots ds ON s._id = ds._id AND s.day = ds.day
           ),
           ad_daily_filled AS (
             SELECT
-              id,
+              _id,
               day,
               MAX(eu_total_reach) OVER (
-                PARTITION BY id
+                PARTITION BY _id
                 ORDER BY day
                 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
               ) AS eu_total_reach_filled,
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
           SELECT
             to_char(day, 'YYYY-MM-DD') AS date,
             SUM(eu_total_reach_filled) AS total_reach,
-            COUNT(DISTINCT id) AS ad_count
+            COUNT(DISTINCT _id) AS ad_count
           FROM ad_daily_filled
           GROUP BY day
           ORDER BY day
