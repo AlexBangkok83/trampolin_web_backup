@@ -3,7 +3,6 @@ import pg from 'pg';
 const { Pool } = pg;
 
 // Database connection for ads data
-// For DigitalOcean managed databases, we should use the proper SSL approach
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl:
@@ -30,7 +29,7 @@ export async function getTotalReachForUrl(url: string): Promise<number> {
       `
       WITH base AS (
         SELECT
-          _id,
+          id,
           created_at::date AS day,
           eu_total_reach,
           snapshot_link_url
@@ -41,12 +40,12 @@ export async function getTotalReachForUrl(url: string): Promise<number> {
       ),
       daily_snapshots AS (
         SELECT
-          _id,
+          id,
           day,
           MAX(eu_total_reach) AS eu_total_reach,
           snapshot_link_url
         FROM base
-        GROUP BY _id, day, snapshot_link_url
+        GROUP BY id, day, snapshot_link_url
       )
       SELECT 
         COALESCE(MAX(eu_total_reach), 0) as total_reach
@@ -91,7 +90,7 @@ export async function getHistoricalReachForAnalysis(
       `
       WITH base AS (
         SELECT
-          _id,
+          id,
           created_at::date AS day,
           eu_total_reach,
           snapshot_link_url
