@@ -11,6 +11,7 @@ export function LoginForm() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -23,6 +24,7 @@ export function LoginForm() {
       redirect: false,
       email,
       password,
+      rememberMe: rememberMe.toString(),
       callbackUrl,
     });
 
@@ -62,6 +64,18 @@ export function LoginForm() {
           required
           className="mt-1 w-full rounded border px-3 py-2"
         />
+      </div>
+      <div className="flex items-center">
+        <input
+          id="remember-me"
+          type="checkbox"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+          Keep me logged in
+        </label>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button

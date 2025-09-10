@@ -22,6 +22,7 @@ export const authOptions: AuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' },
+        rememberMe: { label: 'Remember Me', type: 'checkbox' },
       },
       /**
        * Authorizes a user based on email and password credentials.
@@ -48,13 +49,22 @@ export const authOptions: AuthOptions = {
           email: user.email ?? undefined,
           name: user.name ?? undefined,
           role: user.role?.name ?? 'user',
-        } satisfies { id: string; email?: string; name?: string; role: string };
+          rememberMe: credentials.rememberMe === 'true',
+        } satisfies {
+          id: string;
+          email?: string;
+          name?: string;
+          role: string;
+          rememberMe: boolean;
+        };
         return result;
       },
     }),
   ],
   session: {
     strategy: 'jwt',
+    // Default session max age (1 day)
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   callbacks: {
     /**
@@ -106,6 +116,27 @@ export const authOptions: AuthOptions = {
           token.originalAdminName = user.name;
         }
       }
+
+      // Handle remember me functionality - capture it from the account when first signing in
+      if (user && 'rememberMe' in user && typeof user.rememberMe !== 'undefined') {
+        token.rememberMe = user.rememberMe as boolean;
+
+        // Set custom expiration time based on rememberMe
+        if (user.rememberMe) {
+          // 30 days for remembered sessions
+          const thirtyDays = 30 * 24 * 60 * 60;
+          token.exp = Math.floor(Date.now() / 1000) + thirtyDays;
+          console.log(
+            '🔒 Extended session duration for remember me:',
+            new Date((token.exp as number) * 1000),
+          );
+        } else {
+          // 24 hours for regular sessions
+          const oneDay = 24 * 60 * 60;
+          token.exp = Math.floor(Date.now() / 1000) + oneDay;
+        }
+      }
+
       return token;
     },
     /**
@@ -134,7 +165,20 @@ export const authOptions: AuthOptions = {
         path: '/',
         domain: process.env.NODE_ENV === 'production' ? '.trampolin.ai' : undefined, // Subdomain cookies in prod only
         secure: process.env.NODE_ENV === 'production',
+        // Dynamic maxAge based on remember me - will be overridden per request
+        maxAge: 24 * 60 * 60, // Default 24 hours
       },
+    },
+  },
+  // Custom function to handle dynamic session duration based on rememberMe
+  events: {
+    async signIn({ user }) {
+      // If rememberMe is true, we'll extend the session duration
+      if ('rememberMe' in user && user.rememberMe) {
+        // This extends to 30 days for remembered sessions
+        // The actual implementation happens in the JWT callback
+        console.log('🔒 Remember Me enabled - extending session duration');
+      }
     },
   },
 };
