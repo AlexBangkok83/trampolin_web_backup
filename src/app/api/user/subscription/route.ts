@@ -17,6 +17,7 @@ export async function GET() {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
+        role: true,
         subscriptions: {
           where: { status: { in: ['active', 'trialing'] } },
           orderBy: { createdAt: 'desc' },
@@ -25,7 +26,29 @@ export async function GET() {
       },
     });
 
-    if (!user || user.subscriptions.length === 0) {
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Admin users get unlimited access without subscriptions
+    if (user.role?.name === 'admin') {
+      return NextResponse.json({
+        id: 'admin-unlimited',
+        monthlyLimit: 999999,
+        usedThisMonth: 0,
+        trialLimit: 999999,
+        trialUsed: 0,
+        currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+        status: 'active',
+        isTrialing: false,
+        // Active limits (unlimited for admin)
+        activeLimit: 999999,
+        activeUsed: 0,
+        activeRemaining: 999999,
+      });
+    }
+
+    if (user.subscriptions.length === 0) {
       return NextResponse.json({ error: 'No active subscription found' }, { status: 404 });
     }
 

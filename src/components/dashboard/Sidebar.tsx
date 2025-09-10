@@ -8,13 +8,9 @@ import { useSession, signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  BarChart3,
   Clock,
   BookmarkIcon,
   FileText,
-  Users,
-  TrendingUp,
-  Database,
   Search,
   ChevronLeft,
   ChevronDown,
@@ -52,15 +48,15 @@ const navigation: (NavigationItem | NavigationSection)[] = [
       { name: 'Reports', href: '/dashboard/reports', icon: FileText },
     ],
   },
-  {
-    title: 'TOOLS',
-    items: [
-      { name: 'Competitor Research', href: '/dashboard/competitor-research', icon: TrendingUp },
-      { name: 'Find by Demographics', href: '/dashboard/demographics', icon: Users },
-      { name: 'Industry Analysis', href: '/dashboard/industry', icon: BarChart3 },
-      { name: 'Bulk Export', href: '/dashboard/bulk-export', icon: Database },
-    ],
-  },
+  // {
+  //   title: 'TOOLS',
+  //   items: [
+  //     { name: 'Competitor Research', href: '/dashboard/competitor-research', icon: TrendingUp },
+  //     { name: 'Find by Demographics', href: '/dashboard/demographics', icon: Users },
+  //     { name: 'Industry Analysis', href: '/dashboard/industry', icon: BarChart3 },
+  //     { name: 'Bulk Export', href: '/dashboard/bulk-export', icon: Database },
+  //   ],
+  // },
 ];
 
 function ThemeToggle({ collapsed }: { collapsed: boolean }) {
@@ -110,7 +106,7 @@ function SidebarContent({
   const pathname = usePathname();
   const { data: session } = useSession();
   const [expandedSections, setExpandedSections] = React.useState<Set<string>>(
-    new Set(['ANALYTICS', 'TOOLS']),
+    new Set(['ANALYTICS']),
   );
   const [userDropdownOpen, setUserDropdownOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
